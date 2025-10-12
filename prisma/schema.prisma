@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model (for now just one user, auth via env)
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  landlords  Landlord[]
+}
+
+// Landlord can be a natural person or legal entity (SCI)
+model Landlord {
+  id        String     @id @default(cuid())
+  name      String
+  type      String     // "NATURAL_PERSON" or "LEGAL_ENTITY"
+  address   String
+  email     String?
+  phone     String?
+  siret     String?    // for legal entities
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  properties Property[]
+
+  @@index([userId])
+}
+
+// Property (apartment, house, garage, etc.)
+model Property {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "APARTMENT", "HOUSE", "GARAGE", etc.
+  address     String
+  postalCode  String
+  city        String
+  landlordId  String
+  landlord    Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leases      Lease[]
+
+  @@index([landlordId])
+}
+
+// Tenant
+model Tenant {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  leases    Lease[]
+}
+
+// Lease - links property and tenant
+model Lease {
+  id            String    @id @default(cuid())
+  propertyId    String
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  startDate     DateTime
+  endDate       DateTime?
+  rentAmount    Float     // rent excluding charges
+  chargesAmount Float     // charges
+  paymentDueDay Int       // day of month when payment is due (1-31)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
+  rentRevisions RentRevision[]
+
+  @@index([propertyId])
+  @@index([tenantId])
+}
+
+// Payment
+model Payment {
+  id          String   @id @default(cuid())
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  amount      Float
+  paymentDate DateTime
+  periodStart DateTime // period covered by this payment
+  periodEnd   DateTime
+  type        String   // "RENT", "CHARGES", "FULL", "PARTIAL"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leaseId])
+  @@index([paymentDate])
+}
+
+// RentRevision - track changes to rent over time
+model RentRevision {
+  id            String   @id @default(cuid())
+  leaseId       String
+  lease         Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  effectiveDate DateTime
+  rentAmount    Float
+  chargesAmount Float
+  reason        String?  // e.g., "IRL_REVISION", "AGREEMENT", etc.
+  createdAt     DateTime @default(now())
+
+  @@index([leaseId])
+  @@index([effectiveDate])
+}
