@@ -1,3 +1,8 @@
+import * as bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
 export interface Credentials {
   email: string;
   password: string;
@@ -14,7 +19,12 @@ export function getCredentials(): Credentials {
   return { email, password };
 }
 
-export function validateCredentials(email: string, password: string): boolean {
-  const validCredentials = getCredentials();
-  return email === validCredentials.email && password === validCredentials.password;
+export async function validateCredentials(email: string, password: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    return false;
+  }
+
+  return bcrypt.compare(password, user.password);
 }
