@@ -87,9 +87,11 @@ export class Lease {
 
   getExpectedPaymentDate(forMonth: Date): Date {
     return new Date(
-      forMonth.getFullYear(),
-      forMonth.getMonth(),
-      this.props.paymentDueDay
+      Date.UTC(
+        forMonth.getUTCFullYear(),
+        forMonth.getUTCMonth(),
+        this.props.paymentDueDay
+      )
     );
   }
 }

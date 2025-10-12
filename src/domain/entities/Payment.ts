@@ -76,16 +76,43 @@ export class Payment {
   }
 
   isLatePayment(expectedDate: Date): boolean {
-    return this.props.paymentDate > expectedDate;
+    // Compare dates ignoring time component
+    const paymentDay = new Date(
+      this.props.paymentDate.getUTCFullYear(),
+      this.props.paymentDate.getUTCMonth(),
+      this.props.paymentDate.getUTCDate()
+    );
+    const expectedDay = new Date(
+      expectedDate.getUTCFullYear(),
+      expectedDate.getUTCMonth(),
+      expectedDate.getUTCDate()
+    );
+    return paymentDay > expectedDay;
   }
 
   coversMonth(month: Date): boolean {
-    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    // Get year, month, day components for comparison (ignoring time)
+    const getDateOnly = (date: Date) => {
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      return new Date(Date.UTC(year, month, day));
+    };
+
+    const year = month.getUTCFullYear();
+    const monthIndex = month.getUTCMonth();
+
+    // First day of the month
+    const monthStart = new Date(Date.UTC(year, monthIndex, 1));
+    // Last day of the month
+    const monthEnd = new Date(Date.UTC(year, monthIndex + 1, 0));
+
+    const periodStart = getDateOnly(this.props.periodStart);
+    const periodEnd = getDateOnly(this.props.periodEnd);
 
     return (
-      this.props.periodStart <= monthStart &&
-      this.props.periodEnd >= monthEnd
+      periodStart.getTime() <= monthStart.getTime() &&
+      periodEnd.getTime() >= monthEnd.getTime()
     );
   }
 }
