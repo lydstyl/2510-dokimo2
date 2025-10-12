@@ -95,9 +95,6 @@ model Payment {
   lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
   amount      Float
   paymentDate DateTime
-  periodStart DateTime // period covered by this payment
-  periodEnd   DateTime
-  type        String   // "RENT", "CHARGES", "FULL", "PARTIAL"
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

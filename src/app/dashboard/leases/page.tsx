@@ -156,9 +156,12 @@ export default async function LeasesPage() {
                       <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
                         Record Payment
                       </button>
-                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                      <a
+                        href={`/dashboard/payments/${lease.id}`}
+                        className="text-sm text-blue-600 hover:text-blue-900 font-medium"
+                      >
                         View Payments
-                      </button>
+                      </a>
                       <button className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto">
                         Edit
                       </button>

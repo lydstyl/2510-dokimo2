@@ -91,6 +91,22 @@ async function main() {
 
   console.log('Created property 2:', property2);
 
+  const property3 = await prisma.property.upsert({
+    where: { id: 'property-3' },
+    update: {},
+    create: {
+      id: 'property-3',
+      name: 'Maison - Versailles',
+      type: 'HOUSE',
+      address: '42 Avenue de Paris',
+      postalCode: '78000',
+      city: 'Versailles',
+      landlordId: landlord1.id,
+    },
+  });
+
+  console.log('Created property 3:', property3);
+
   // Create tenants
   const tenant1 = await prisma.tenant.upsert({
     where: { id: 'tenant-1' },
@@ -104,7 +120,7 @@ async function main() {
     },
   });
 
-  console.log('Created tenant 1:', tenant1);
+  console.log('Created tenant 1 (Paid Enough):', tenant1);
 
   const tenant2 = await prisma.tenant.upsert({
     where: { id: 'tenant-2' },
@@ -118,9 +134,24 @@ async function main() {
     },
   });
 
-  console.log('Created tenant 2:', tenant2);
+  console.log('Created tenant 2 (Underpaid):', tenant2);
+
+  const tenant3 = await prisma.tenant.upsert({
+    where: { id: 'tenant-3' },
+    update: {},
+    create: {
+      id: 'tenant-3',
+      firstName: 'Sophie',
+      lastName: 'Dubois',
+      email: 'sophie.dubois@example.com',
+      phone: '+33 6 55 44 33 22',
+    },
+  });
+
+  console.log('Created tenant 3 (Overpaid):', tenant3);
 
   // Create leases
+  // Lease 1: Tenant who paid enough (10 months, all paid)
   const lease1 = await prisma.lease.upsert({
     where: { id: 'lease-1' },
     update: {},
@@ -137,6 +168,7 @@ async function main() {
 
   console.log('Created lease 1:', lease1);
 
+  // Lease 2: Tenant who underpaid (8 months, only 5 payments)
   const lease2 = await prisma.lease.upsert({
     where: { id: 'lease-2' },
     update: {},
@@ -153,40 +185,73 @@ async function main() {
 
   console.log('Created lease 2:', lease2);
 
-  // Create sample payments
-  const payment1 = await prisma.payment.upsert({
-    where: { id: 'payment-1' },
+  // Lease 3: Tenant who overpaid (6 months, 8 payments)
+  const lease3 = await prisma.lease.upsert({
+    where: { id: 'lease-3' },
     update: {},
     create: {
-      id: 'payment-1',
-      leaseId: lease1.id,
-      amount: 1350,
-      paymentDate: new Date('2024-01-05'),
-      periodStart: new Date('2024-01-01'),
-      periodEnd: new Date('2024-01-31'),
-      type: 'FULL',
-      notes: 'Payment for January 2024',
+      id: 'lease-3',
+      propertyId: property3.id,
+      tenantId: tenant3.id,
+      startDate: new Date('2024-05-01'),
+      rentAmount: 1000,
+      chargesAmount: 100,
+      paymentDueDay: 10,
     },
   });
 
-  console.log('Created payment 1:', payment1);
+  console.log('Created lease 3:', lease3);
 
-  const payment2 = await prisma.payment.upsert({
-    where: { id: 'payment-2' },
-    update: {},
-    create: {
-      id: 'payment-2',
-      leaseId: lease1.id,
-      amount: 1350,
-      paymentDate: new Date('2024-02-05'),
-      periodStart: new Date('2024-02-01'),
-      periodEnd: new Date('2024-02-29'),
-      type: 'FULL',
-      notes: 'Payment for February 2024',
-    },
-  });
+  // Payments for Lease 1 (Paid Enough - 10 months, 10 payments)
+  const monthlyAmount1 = 1350; // 1200 + 150
+  for (let i = 0; i < 10; i++) {
+    await prisma.payment.upsert({
+      where: { id: `payment-1-${i + 1}` },
+      update: {},
+      create: {
+        id: `payment-1-${i + 1}`,
+        leaseId: lease1.id,
+        amount: monthlyAmount1,
+        paymentDate: new Date(2024, i, 5),
+        notes: `Payment for month ${i + 1}`,
+      },
+    });
+  }
+  console.log('Created 10 payments for lease 1 (Paid Enough)');
 
-  console.log('Created payment 2:', payment2);
+  // Payments for Lease 2 (Underpaid - 8 months, only 5 payments)
+  const monthlyAmount2 = 880; // 800 + 80
+  for (let i = 0; i < 5; i++) {
+    await prisma.payment.upsert({
+      where: { id: `payment-2-${i + 1}` },
+      update: {},
+      create: {
+        id: `payment-2-${i + 1}`,
+        leaseId: lease2.id,
+        amount: monthlyAmount2,
+        paymentDate: new Date(2024, 2 + i, 1), // Starting from March (month 2)
+        notes: `Payment for month ${i + 1}`,
+      },
+    });
+  }
+  console.log('Created 5 payments for lease 2 (Underpaid - owes 3 months)');
+
+  // Payments for Lease 3 (Overpaid - 6 months, 8 payments)
+  const monthlyAmount3 = 1100; // 1000 + 100
+  for (let i = 0; i < 8; i++) {
+    await prisma.payment.upsert({
+      where: { id: `payment-3-${i + 1}` },
+      update: {},
+      create: {
+        id: `payment-3-${i + 1}`,
+        leaseId: lease3.id,
+        amount: monthlyAmount3,
+        paymentDate: new Date(2024, 4 + i, 10), // Starting from May (month 4)
+        notes: `Payment for month ${i + 1}`,
+      },
+    });
+  }
+  console.log('Created 8 payments for lease 3 (Overpaid - 2 months ahead)');
 
   console.log('Seed completed successfully!');
 }

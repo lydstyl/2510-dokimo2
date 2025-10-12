@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { IPaymentRepository } from '../../use-cases/interfaces/IPaymentRepository';
-import { Payment, PaymentType } from '../../domain/entities/Payment';
+import { Payment } from '../../domain/entities/Payment';
 import { Money } from '../../domain/value-objects/Money';
 
 export class PrismaPaymentRepository implements IPaymentRepository {
@@ -33,8 +33,7 @@ export class PrismaPaymentRepository implements IPaymentRepository {
     const payments = await this.prisma.payment.findMany({
       where: {
         leaseId,
-        periodStart: { lte: endDate },
-        periodEnd: { gte: startDate },
+        paymentDate: { gte: startDate, lte: endDate },
       },
       orderBy: { paymentDate: 'desc' },
     });
@@ -49,9 +48,6 @@ export class PrismaPaymentRepository implements IPaymentRepository {
         leaseId: payment.leaseId,
         amount: payment.amount.getValue(),
         paymentDate: payment.paymentDate,
-        periodStart: payment.periodStart,
-        periodEnd: payment.periodEnd,
-        type: payment.type,
         notes: payment.notes,
       },
     });
@@ -65,9 +61,6 @@ export class PrismaPaymentRepository implements IPaymentRepository {
       data: {
         amount: payment.amount.getValue(),
         paymentDate: payment.paymentDate,
-        periodStart: payment.periodStart,
-        periodEnd: payment.periodEnd,
-        type: payment.type,
         notes: payment.notes,
       },
     });
@@ -87,9 +80,6 @@ export class PrismaPaymentRepository implements IPaymentRepository {
       leaseId: raw.leaseId,
       amount: Money.create(raw.amount),
       paymentDate: raw.paymentDate,
-      periodStart: raw.periodStart,
-      periodEnd: raw.periodEnd,
-      type: raw.type as PaymentType,
       notes: raw.notes,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

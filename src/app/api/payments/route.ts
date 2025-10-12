@@ -3,7 +3,6 @@ import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { RecordPayment } from '@/use-cases/RecordPayment';
-import { PaymentType } from '@/domain/entities/Payment';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,9 +30,6 @@ export async function GET(request: NextRequest) {
         leaseId: payment.leaseId,
         amount: payment.amount.getValue(),
         paymentDate: payment.paymentDate,
-        periodStart: payment.periodStart,
-        periodEnd: payment.periodEnd,
-        type: payment.type,
         notes: payment.notes,
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
@@ -56,9 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { leaseId, amount, paymentDate, periodStart, periodEnd, type, notes } = body;
+    const { leaseId, amount, paymentDate, notes } = body;
 
-    if (!leaseId || amount === undefined || !paymentDate || !periodStart || !periodEnd || !type) {
+    if (!leaseId || amount === undefined || !paymentDate) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -72,9 +68,6 @@ export async function POST(request: NextRequest) {
       leaseId,
       amount: Number(amount),
       paymentDate: new Date(paymentDate),
-      periodStart: new Date(periodStart),
-      periodEnd: new Date(periodEnd),
-      type: type as PaymentType,
       notes,
     });
 
@@ -84,9 +77,6 @@ export async function POST(request: NextRequest) {
         leaseId: payment.leaseId,
         amount: payment.amount.getValue(),
         paymentDate: payment.paymentDate,
-        periodStart: payment.periodStart,
-        periodEnd: payment.periodEnd,
-        type: payment.type,
         notes: payment.notes,
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,

@@ -114,9 +114,6 @@ export default function PaymentsPage() {
       leaseId,
       amount: parseFloat(formData.get('amount') as string),
       paymentDate: formData.get('paymentDate') as string,
-      periodStart: formData.get('periodStart') as string,
-      periodEnd: formData.get('periodEnd') as string,
-      type: formData.get('type') as string,
       notes: formData.get('notes') as string || null,
     };
 
@@ -187,9 +184,9 @@ export default function PaymentsPage() {
                   {leaseStatuses.map(({ lease, monthlyRent, balance, isUpToDate, lastPaymentDate, lastPaymentAmount }) => (
                     <tr key={lease.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <a href={`/dashboard/payments/${lease.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
                           {lease.tenant.firstName} {lease.tenant.lastName}
-                        </div>
+                        </a>
                         <div className="text-xs text-gray-500">{lease.tenant.email || '-'}</div>
                       </td>
                       <td className="px-6 py-4">
@@ -304,46 +301,6 @@ export default function PaymentsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Period Start
-                  </label>
-                  <input
-                    type="date"
-                    name="periodStart"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Period End
-                  </label>
-                  <input
-                    type="date"
-                    name="periodEnd"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type
-                  </label>
-                  <select
-                    name="type"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="FULL">Full Payment</option>
-                    <option value="PARTIAL">Partial Payment</option>
-                    <option value="RENT">Rent Only</option>
-                    <option value="CHARGES">Charges Only</option>
-                  </select>
                 </div>
 
                 <div className="mb-4">
