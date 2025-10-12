@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const propertyId = searchParams.get('propertyId');
     const tenantId = searchParams.get('tenantId');
+    const activeOnly = searchParams.get('activeOnly') === 'true';
 
     const repository = new PrismaLeaseRepository(prisma);
 
@@ -22,8 +23,34 @@ export async function GET(request: NextRequest) {
       leases = await repository.findByPropertyId(propertyId);
     } else if (tenantId) {
       leases = await repository.findByTenantId(tenantId);
+    } else if (activeOnly) {
+      leases = await repository.findActiveLeases();
     } else {
       leases = await repository.findActiveLeases();
+    }
+
+    // If activeOnly, include related data for the payments page
+    if (activeOnly) {
+      const now = new Date();
+      const leasesWithRelations = await prisma.lease.findMany({
+        where: {
+          startDate: { lte: now },
+          OR: [
+            { endDate: null },
+            { endDate: { gte: now } },
+          ],
+        },
+        include: {
+          tenant: true,
+          property: true,
+          payments: {
+            orderBy: { paymentDate: 'desc' },
+          },
+        },
+        orderBy: { startDate: 'desc' },
+      });
+
+      return NextResponse.json(leasesWithRelations);
     }
 
     return NextResponse.json(

@@ -35,6 +35,7 @@ export default async function DashboardPage() {
           <DashboardCard title="Properties" href="/dashboard/properties" />
           <DashboardCard title="Tenants" href="/dashboard/tenants" />
           <DashboardCard title="Leases" href="/dashboard/leases" />
+          <DashboardCard title="Payments" href="/dashboard/payments" />
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
