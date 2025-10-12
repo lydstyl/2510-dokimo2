@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function LeasesPage() {
   const session = await getSession();
@@ -7,6 +10,25 @@ export default async function LeasesPage() {
   if (!session) {
     redirect('/login');
   }
+
+  const leases = await prisma.lease.findMany({
+    include: {
+      property: {
+        include: {
+          landlord: true,
+        },
+      },
+      tenant: true,
+      payments: {
+        orderBy: {
+          paymentDate: 'desc',
+        },
+      },
+    },
+    orderBy: {
+      startDate: 'desc',
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -33,57 +55,119 @@ export default async function LeasesPage() {
             </button>
           </div>
 
-          <div className="text-gray-600">
-            <p className="mb-4">
-              Leases (Baux) are rental contracts that link properties with tenants.
-            </p>
-
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">Lease Details:</h3>
-              <p className="text-sm mb-2">Each lease contains:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm mb-4">
-                <li><strong>Property</strong>: The rented property</li>
-                <li><strong>Tenant</strong>: The person renting</li>
-                <li><strong>Start date</strong>: When the lease begins</li>
-                <li><strong>End date</strong>: When the lease ends (optional for open-ended leases)</li>
-                <li><strong>Rent amount</strong>: Monthly rent excluding charges</li>
-                <li><strong>Charges amount</strong>: Monthly charges (utilities, maintenance, etc.)</li>
-                <li><strong>Payment due day</strong>: Day of the month when payment is due (1-31)</li>
-              </ul>
+          {leases.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No leases found. Create your first lease to get started.</p>
             </div>
+          ) : (
+            <div className="space-y-4">
+              {leases.map((lease) => {
+                const totalPaid = lease.payments.reduce((sum, payment) => sum + payment.amount, 0);
+                const monthlyTotal = lease.rentAmount + lease.chargesAmount;
+                const isActive = !lease.endDate;
+                const lastPayment = lease.payments[0];
 
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">Available Actions:</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm mb-4">
-                <li>Record rent payments</li>
-                <li>Generate rent receipts (quittances de loyer)</li>
-                <li>Generate rent due notices (avis d'échéance)</li>
-                <li>Check payment status</li>
-                <li>Export payment history to CSV</li>
-              </ul>
-            </div>
+                return (
+                  <div key={lease.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {lease.property.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {lease.property.address}, {lease.property.postalCode} {lease.property.city}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {isActive ? 'Active' : 'Ended'}
+                      </span>
+                    </div>
 
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">API Endpoints:</h3>
-              <ul className="space-y-1 text-sm font-mono bg-gray-50 p-3 rounded">
-                <li>GET /api/leases - List active leases</li>
-                <li>GET /api/leases?propertyId=xxx - List leases by property</li>
-                <li>GET /api/leases?tenantId=xxx - List leases by tenant</li>
-                <li>POST /api/leases - Create a new lease</li>
-                <li>GET /api/payments?leaseId=xxx - List payments for a lease</li>
-                <li>POST /api/payments - Record a payment</li>
-                <li>GET /api/payments/export/[leaseId] - Export payments as CSV</li>
-                <li>GET /api/documents/rent-receipt/[paymentId] - Generate rent receipt</li>
-              </ul>
-            </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Tenant</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {lease.tenant.firstName} {lease.tenant.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Landlord</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {lease.property.landlord.name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Monthly Rent</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          €{monthlyTotal.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          (€{lease.rentAmount} + €{lease.chargesAmount} charges)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Payment Due</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          Day {lease.paymentDueDay} of month
+                        </p>
+                      </div>
+                    </div>
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-md">
-              <p className="text-sm">
-                💡 <strong>Note:</strong> This is a placeholder page. The full lease management interface
-                with payment tracking and document generation will be implemented next.
-              </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Start Date</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(lease.startDate).toLocaleDateString('en-GB')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">End Date</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {lease.endDate ? new Date(lease.endDate).toLocaleDateString('en-GB') : 'Open-ended'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Total Payments</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          €{totalPaid.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {lease.payments.length} payment{lease.payments.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Last Payment</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {lastPayment
+                            ? new Date(lastPayment.paymentDate).toLocaleDateString('en-GB')
+                            : 'No payments yet'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4 pt-4 border-t">
+                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                        View Details
+                      </button>
+                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                        Record Payment
+                      </button>
+                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                        View Payments
+                      </button>
+                      <button className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto">
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

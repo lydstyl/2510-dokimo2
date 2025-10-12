@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function LandlordsPage() {
   const session = await getSession();
@@ -7,6 +10,15 @@ export default async function LandlordsPage() {
   if (!session) {
     redirect('/login');
   }
+
+  const landlords = await prisma.landlord.findMany({
+    include: {
+      properties: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -33,30 +45,59 @@ export default async function LandlordsPage() {
             </button>
           </div>
 
-          <div className="text-gray-600">
-            <p className="mb-4">
-              Landlords are property owners who rent out their properties. They can be:
-            </p>
-            <ul className="list-disc list-inside space-y-2 mb-6">
-              <li><strong>Natural Person</strong>: An individual property owner</li>
-              <li><strong>Legal Entity</strong>: A company or SCI (Société Civile Immobilière)</li>
-            </ul>
-
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">API Endpoints:</h3>
-              <ul className="space-y-1 text-sm font-mono bg-gray-50 p-3 rounded">
-                <li>GET /api/landlords - List all landlords</li>
-                <li>POST /api/landlords - Create a new landlord</li>
-              </ul>
+          {landlords.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No landlords found. Create your first landlord to get started.</p>
             </div>
-
-            <div className="mt-6 p-4 bg-blue-50 rounded-md">
-              <p className="text-sm">
-                💡 <strong>Note:</strong> This is a placeholder page. The full CRUD interface will be implemented next.
-                For now, you can interact with landlords via the API endpoints.
-              </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Properties</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {landlords.map((landlord) => (
+                    <tr key={landlord.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{landlord.name}</div>
+                        {landlord.siret && <div className="text-xs text-gray-500">SIRET: {landlord.siret}</div>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          landlord.type === 'NATURAL_PERSON'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {landlord.type === 'NATURAL_PERSON' ? 'Natural Person' : 'Legal Entity'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{landlord.email || '-'}</div>
+                        <div className="text-xs text-gray-500">{landlord.phone || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{landlord.address}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {landlord.properties.length} {landlord.properties.length === 1 ? 'property' : 'properties'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                        <button className="text-red-600 hover:text-red-900">Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

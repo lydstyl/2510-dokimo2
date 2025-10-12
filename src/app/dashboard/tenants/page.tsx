@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function TenantsPage() {
   const session = await getSession();
@@ -7,6 +10,20 @@ export default async function TenantsPage() {
   if (!session) {
     redirect('/login');
   }
+
+  const tenants = await prisma.tenant.findMany({
+    include: {
+      leases: {
+        include: {
+          property: true,
+          payments: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -33,36 +50,74 @@ export default async function TenantsPage() {
             </button>
           </div>
 
-          <div className="text-gray-600">
-            <p className="mb-4">
-              Tenants are individuals who rent properties from landlords.
-            </p>
-
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">Tenant Information:</h3>
-              <p className="text-sm mb-2">Each tenant record includes:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm mb-4">
-                <li>First name and last name</li>
-                <li>Contact information (email, phone)</li>
-              </ul>
+          {tenants.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No tenants found. Create your first tenant to get started.</p>
             </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Leases</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Payments</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tenants.map((tenant) => {
+                    const activeLeases = tenant.leases.filter(lease => !lease.endDate);
+                    const totalPayments = tenant.leases.reduce(
+                      (sum, lease) => sum + lease.payments.reduce((s, p) => s + p.amount, 0),
+                      0
+                    );
 
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-2">Related Features:</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>View all leases associated with a tenant</li>
-                <li>Check payment history</li>
-                <li>Monitor payment status (up-to-date or late)</li>
-              </ul>
+                    return (
+                      <tr key={tenant.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {tenant.firstName} {tenant.lastName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{tenant.email || '-'}</div>
+                          <div className="text-xs text-gray-500">{tenant.phone || '-'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {activeLeases.length > 0 ? (
+                            <div>
+                              {activeLeases.map((lease) => (
+                                <div key={lease.id} className="text-sm text-gray-900 mb-1">
+                                  {lease.property.name}
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    €{lease.rentAmount + lease.chargesAmount}/mo
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">No active leases</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">€{totalPayments.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">
+                            {tenant.leases.reduce((sum, lease) => sum + lease.payments.length, 0)} payments
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                          <button className="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            <div className="mt-6 p-4 bg-blue-50 rounded-md">
-              <p className="text-sm">
-                💡 <strong>Note:</strong> This is a placeholder page. The full CRUD interface will be implemented next.
-                Tenants are linked to properties through lease contracts.
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
