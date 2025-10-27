@@ -1,5 +1,3 @@
-- Je veux pouvoir ajouter et modifier ou supprimer un propriétaire dans /landlords et si le propriétaire est une personne morale, il faut aussi y assigner un gérant et ce gérant figurera sur les documents (quittances, reçu partiel, etc.) tout cela via une modale.
-
 - Je veux pouvoir ajouter et modifier ou supprimer un bien dans /properties via une modale.
 
 - Je veux pouvoir ajouter et modifier ou supprimer un locataire dans /tenants via une modale.
