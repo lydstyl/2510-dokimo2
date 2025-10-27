@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
         email: landlord.email?.getValue(),
         phone: landlord.phone,
         siret: landlord.siret,
+        managerName: landlord.managerName,
+        managerEmail: landlord.managerEmail?.getValue(),
+        managerPhone: landlord.managerPhone,
         createdAt: landlord.createdAt,
         updatedAt: landlord.updatedAt,
       }))
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, address, email, phone, siret } = body;
+    const { name, type, address, email, phone, siret, managerName, managerEmail, managerPhone } = body;
 
     if (!name || !type || !address) {
       return NextResponse.json(
@@ -67,6 +70,9 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       siret,
+      managerName,
+      managerEmail,
+      managerPhone,
       userId: 'user-1', // Hardcoded for now
     });
 
@@ -79,6 +85,9 @@ export async function POST(request: NextRequest) {
         email: landlord.email?.getValue(),
         phone: landlord.phone,
         siret: landlord.siret,
+        managerName: landlord.managerName,
+        managerEmail: landlord.managerEmail?.getValue(),
+        managerPhone: landlord.managerPhone,
         createdAt: landlord.createdAt,
         updatedAt: landlord.updatedAt,
       },

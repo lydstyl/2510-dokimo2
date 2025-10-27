@@ -1,9 +1,9 @@
 import { Landlord, LandlordType } from '../domain/entities/Landlord';
 import { Email } from '../domain/value-objects/Email';
 import { ILandlordRepository } from './interfaces/ILandlordRepository';
-import { randomUUID } from 'crypto';
 
-export interface CreateLandlordInput {
+export interface UpdateLandlordInput {
+  id: string;
   name: string;
   type: LandlordType;
   address: string;
@@ -16,12 +16,23 @@ export interface CreateLandlordInput {
   userId: string;
 }
 
-export class CreateLandlord {
+export class UpdateLandlord {
   constructor(private landlordRepository: ILandlordRepository) {}
 
-  async execute(input: CreateLandlordInput): Promise<Landlord> {
+  async execute(input: UpdateLandlordInput): Promise<Landlord> {
+    // Check if landlord exists
+    const existingLandlord = await this.landlordRepository.findById(input.id);
+    if (!existingLandlord) {
+      throw new Error('Landlord not found');
+    }
+
+    // Verify ownership
+    if (existingLandlord.userId !== input.userId) {
+      throw new Error('Unauthorized to update this landlord');
+    }
+
     const landlord = Landlord.create({
-      id: randomUUID(),
+      id: input.id,
       name: input.name,
       type: input.type,
       address: input.address,
@@ -32,10 +43,10 @@ export class CreateLandlord {
       managerEmail: input.managerEmail ? Email.create(input.managerEmail) : undefined,
       managerPhone: input.managerPhone,
       userId: input.userId,
-      createdAt: new Date(),
+      createdAt: existingLandlord.createdAt,
       updatedAt: new Date(),
     });
 
-    return this.landlordRepository.create(landlord);
+    return this.landlordRepository.update(landlord);
   }
 }
