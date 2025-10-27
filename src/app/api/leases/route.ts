@@ -18,56 +18,41 @@ export async function GET(request: NextRequest) {
 
     const repository = new PrismaLeaseRepository(prisma);
 
-    let leases;
+    // Always return leases with relations for the UI
+    let whereCondition: any = {};
+
     if (propertyId) {
-      leases = await repository.findByPropertyId(propertyId);
+      whereCondition.propertyId = propertyId;
     } else if (tenantId) {
-      leases = await repository.findByTenantId(tenantId);
+      whereCondition.tenantId = tenantId;
     } else if (activeOnly) {
-      leases = await repository.findActiveLeases();
-    } else {
-      leases = await repository.findActiveLeases();
+      const now = new Date();
+      whereCondition = {
+        startDate: { lte: now },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: now } },
+        ],
+      };
     }
 
-    // If activeOnly, include related data for the payments page
-    if (activeOnly) {
-      const now = new Date();
-      const leasesWithRelations = await prisma.lease.findMany({
-        where: {
-          startDate: { lte: now },
-          OR: [
-            { endDate: null },
-            { endDate: { gte: now } },
-          ],
-        },
-        include: {
-          tenant: true,
-          property: true,
-          payments: {
-            orderBy: { paymentDate: 'desc' },
+    const leasesWithRelations = await prisma.lease.findMany({
+      where: whereCondition,
+      include: {
+        tenant: true,
+        property: {
+          include: {
+            landlord: true,
           },
         },
-        orderBy: { startDate: 'desc' },
-      });
+        payments: {
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+      orderBy: { startDate: 'desc' },
+    });
 
-      return NextResponse.json(leasesWithRelations);
-    }
-
-    return NextResponse.json(
-      leases.map(lease => ({
-        id: lease.id,
-        propertyId: lease.propertyId,
-        tenantId: lease.tenantId,
-        startDate: lease.startDate,
-        endDate: lease.endDate,
-        rentAmount: lease.rentAmount.getValue(),
-        chargesAmount: lease.chargesAmount.getValue(),
-        totalAmount: lease.totalAmount.getValue(),
-        paymentDueDay: lease.paymentDueDay,
-        createdAt: lease.createdAt,
-        updatedAt: lease.updatedAt,
-      }))
-    );
+    return NextResponse.json(leasesWithRelations);
   } catch (error) {
     console.error('Error fetching leases:', error);
     return NextResponse.json(

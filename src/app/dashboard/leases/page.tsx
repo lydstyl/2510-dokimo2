@@ -1,38 +1,119 @@
-import { redirect } from 'next/navigation';
-import { getSession } from '@/infrastructure/auth/session';
-import { PrismaClient } from '@prisma/client';
-import { getTranslations } from 'next-intl/server';
+'use client';
 
-const prisma = new PrismaClient();
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
-export default async function LeasesPage() {
-  const session = await getSession();
+interface Landlord {
+  id: string;
+  name: string;
+}
 
-  if (!session) {
-    redirect('/login');
+interface Property {
+  id: string;
+  name: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  landlord: Landlord;
+}
+
+interface Tenant {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  paymentDate: Date;
+}
+
+interface Lease {
+  id: string;
+  rentAmount: number;
+  chargesAmount: number;
+  paymentDueDay: number;
+  startDate: Date;
+  endDate: Date | null;
+  property: Property;
+  tenant: Tenant;
+  payments: Payment[];
+}
+
+export default function LeasesPage() {
+  const t = useTranslations('leases');
+  const tNav = useTranslations('navigation');
+  const router = useRouter();
+  const [leases, setLeases] = useState<Lease[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
+
+  useEffect(() => {
+    fetchLeases();
+  }, [router]);
+
+  const fetchLeases = async () => {
+    try {
+      const response = await fetch('/api/leases');
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/login');
+          return;
+        }
+        throw new Error('Failed to fetch leases');
+      }
+
+      const data = await response.json();
+      setLeases(data);
+    } catch (error) {
+      console.error('Error fetching leases:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedLease) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const payload = {
+      leaseId: selectedLease.id,
+      amount: parseFloat(formData.get('amount') as string),
+      paymentDate: formData.get('paymentDate') as string,
+      notes: formData.get('notes') as string || null,
+    };
+
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setSelectedLease(null);
+        fetchLeases(); // Refresh the leases
+      } else {
+        const error = await response.json();
+        alert('Error: ' + error.error);
+      }
+    } catch (error) {
+      alert('Failed to save payment');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Chargement...</div>
+      </div>
+    );
   }
-
-  const t = await getTranslations('leases');
-  const tNav = await getTranslations('navigation');
-
-  const leases = await prisma.lease.findMany({
-    include: {
-      property: {
-        include: {
-          landlord: true,
-        },
-      },
-      tenant: true,
-      payments: {
-        orderBy: {
-          paymentDate: 'desc',
-        },
-      },
-    },
-    orderBy: {
-      startDate: 'desc',
-    },
-  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -45,7 +126,6 @@ export default async function LeasesPage() {
               </a>
               <h1 className="text-xl font-bold">{t('title')}</h1>
             </div>
-            <span className="text-sm text-gray-600">{session.email}</span>
           </div>
         </div>
       </nav>
@@ -66,10 +146,10 @@ export default async function LeasesPage() {
           ) : (
             <div className="space-y-4">
               {leases.map((lease) => {
-                const totalPaid = lease.payments.reduce((sum, payment) => sum + payment.amount, 0);
+                const totalPaid = lease.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
                 const monthlyTotal = lease.rentAmount + lease.chargesAmount;
                 const isActive = !lease.endDate;
-                const lastPayment = lease.payments[0];
+                const lastPayment = lease.payments?.[0];
 
                 return (
                   <div key={lease.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -140,7 +220,7 @@ export default async function LeasesPage() {
                           €{totalPaid.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {lease.payments.length} {lease.payments.length === 1 ? t('payment') : t('payments')}
+                          {lease.payments?.length || 0} {(lease.payments?.length || 0) === 1 ? t('payment') : t('payments')}
                         </p>
                       </div>
                       <div>
@@ -154,17 +234,17 @@ export default async function LeasesPage() {
                     </div>
 
                     <div className="flex gap-2 mt-4 pt-4 border-t">
-                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
-                        {t('actions.viewDetails')}
-                      </button>
-                      <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                      <button
+                        onClick={() => setSelectedLease(lease)}
+                        className="text-sm text-blue-600 hover:text-blue-900 font-medium"
+                      >
                         {t('actions.recordPayment')}
                       </button>
                       <a
-                        href={`/dashboard/payments/${lease.id}`}
+                        href={`/dashboard/leases/${lease.id}/payments`}
                         className="text-sm text-blue-600 hover:text-blue-900 font-medium"
                       >
-                        {t('actions.viewPayments')}
+                        {t('actions.viewHistory')}
                       </a>
                       <button className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto">
                         {t('actions.edit')}
@@ -177,6 +257,87 @@ export default async function LeasesPage() {
           )}
         </div>
       </main>
+
+      {/* Payment Modal */}
+      {selectedLease && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">{t('modal.title')}</h3>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setSelectedLease(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <strong>{selectedLease.tenant.firstName} {selectedLease.tenant.lastName}</strong>
+                <br />
+                {selectedLease.property.name}
+              </p>
+            </div>
+
+            <form onSubmit={handleAddPayment}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('modal.amount')}
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  step="0.01"
+                  defaultValue={(selectedLease.rentAmount + selectedLease.chargesAmount).toFixed(2)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('modal.date')}
+                </label>
+                <input
+                  type="date"
+                  name="paymentDate"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('modal.notes')}
+                </label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  onClick={() => setSelectedLease(null)}
+                >
+                  {t('modal.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {t('modal.save')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

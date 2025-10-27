@@ -136,10 +136,17 @@
     "payment": "paiement",
     "payments": "paiements",
     "actions": {
-      "viewDetails": "Voir détails",
       "recordPayment": "Enregistrer paiement",
-      "viewPayments": "Voir paiements",
+      "viewHistory": "Voir l'historique",
       "edit": "Modifier"
+    },
+    "modal": {
+      "title": "Ajouter un paiement",
+      "amount": "Montant (€)",
+      "date": "Date de paiement",
+      "notes": "Notes (optionnel)",
+      "cancel": "Annuler",
+      "save": "Enregistrer le paiement"
     }
   },
   "payments": {
