@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
+import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
+import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
+import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
 
 export async function GET(
   request: NextRequest,
@@ -42,8 +45,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    // Get applicable rent for the payment date (considering rent revisions)
+    const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
+    const leaseRepo = new PrismaLeaseRepository(prisma);
+    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
+
+    const applicableRent = await getApplicableRent.execute(
+      payment.leaseId,
+      new Date(payment.paymentDate)
+    );
+
     // Calculate balances
-    const monthlyRent = payment.lease.rentAmount + payment.lease.chargesAmount;
+    const monthlyRent = applicableRent.totalAmount;
     const startDate = new Date(payment.lease.startDate);
     const paymentDate = new Date(payment.paymentDate);
 
@@ -69,10 +82,12 @@ export async function GET(
     const balanceBefore = totalPaidBefore - expectedTotal;
     const balanceAfter = totalPaidAfter - expectedTotal;
 
-    // Generate receipt content
+    // Generate receipt content with applicable rent amounts
     const receiptContent = generateReceiptText(
       payment,
       receiptType,
+      applicableRent.rentAmount,
+      applicableRent.chargesAmount,
       monthlyRent,
       balanceBefore,
       balanceAfter
@@ -97,6 +112,8 @@ export async function GET(
 function generateReceiptText(
   payment: any,
   receiptType: string,
+  rentAmount: number,
+  chargesAmount: number,
   monthlyRent: number,
   balanceBefore: number,
   balanceAfter: number
@@ -150,8 +167,8 @@ function generateReceiptText(
 
   lines.push('LEASE INFORMATION');
   lines.push('-'.repeat(60));
-  lines.push(`Monthly Rent: €${payment.lease.rentAmount.toFixed(2)}`);
-  lines.push(`Monthly Charges: €${payment.lease.chargesAmount.toFixed(2)}`);
+  lines.push(`Monthly Rent: €${rentAmount.toFixed(2)}`);
+  lines.push(`Monthly Charges: €${chargesAmount.toFixed(2)}`);
   lines.push(`Total Monthly Payment: €${monthlyRent.toFixed(2)}`);
   lines.push(`Payment Due Day: ${payment.lease.paymentDueDay}`);
   lines.push('');

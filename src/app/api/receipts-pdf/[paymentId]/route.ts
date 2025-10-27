@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
 import { PdfReceiptGenerator } from '@/features/receipt/infrastructure/PdfReceiptGenerator';
+import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
+import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
+import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
 
 export async function GET(
   request: NextRequest,
@@ -43,8 +46,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    // Get applicable rent for the payment date (considering rent revisions)
+    const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
+    const leaseRepo = new PrismaLeaseRepository(prisma);
+    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
+
+    const applicableRent = await getApplicableRent.execute(
+      payment.leaseId,
+      new Date(payment.paymentDate)
+    );
+
     // Calculate balances
-    const monthlyRent = payment.lease.rentAmount + payment.lease.chargesAmount;
+    const monthlyRent = applicableRent.totalAmount;
     const startDate = new Date(payment.lease.startDate);
     const paymentDate = new Date(payment.paymentDate);
 
@@ -73,7 +86,7 @@ export async function GET(
     // Generate receipt number
     const receiptNumber = `REC-${payment.id.slice(0, 8).toUpperCase()}`;
 
-    // Prepare data for PDF generation
+    // Prepare data for PDF generation with applicable rent amounts
     const receiptData = {
       receiptNumber,
       issueDate: new Date(),
@@ -100,8 +113,8 @@ export async function GET(
         postalCode: payment.lease.property.postalCode,
       },
       lease: {
-        rentAmount: payment.lease.rentAmount,
-        chargesAmount: payment.lease.chargesAmount,
+        rentAmount: applicableRent.rentAmount,
+        chargesAmount: applicableRent.chargesAmount,
         paymentDueDay: payment.lease.paymentDueDay,
       },
       payment: {
