@@ -65,6 +65,7 @@ export default function LeasePaymentsPage() {
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [showAddPayment, setShowAddPayment] = useState(false);
 
   useEffect(() => {
     fetchLeaseDetails();
@@ -137,13 +138,14 @@ export default function LeasePaymentsPage() {
       let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
       if (totalPaid === 0) {
         receiptType = 'unpaid';
+      } else if (balanceAfter > 0) {
+        // Si le solde après est positif, c'est un trop-perçu
+        receiptType = 'overpayment';
       } else if (balanceAfter >= -0.01) {
-        if (balanceAfter > monthlyRent * 0.1) {
-          receiptType = 'overpayment';
-        } else {
-          receiptType = 'full';
-        }
+        // Si le solde est proche de 0 (±0.01), c'est une quittance complète
+        receiptType = 'full';
       } else {
+        // Sinon c'est un paiement partiel
         receiptType = 'partial';
       }
 
@@ -223,62 +225,378 @@ export default function LeasePaymentsPage() {
     }
   };
 
+  const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!lease) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const payload = {
+      leaseId: lease.id,
+      amount: parseFloat(formData.get('amount') as string),
+      paymentDate: formData.get('paymentDate') as string,
+      notes: formData.get('notes') as string || null,
+    };
+
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setShowAddPayment(false);
+        fetchLeaseDetails();
+      } else {
+        const error = await response.json();
+        alert('Erreur: ' + error.error);
+      }
+    } catch (error) {
+      alert('Échec de l\'enregistrement du paiement');
+    }
+  };
+
+  const handleExportTxt = () => {
+    if (!lease) return;
+
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+    const monthlyRent = lease.rentAmount + lease.chargesAmount;
+
+    let content = `═══════════════════════════════════════════════════════════════
+          HISTORIQUE DES PAIEMENTS - EXPORT COMPLET
+═══════════════════════════════════════════════════════════════
+
+Généré le : ${currentDate}
+
+LOCATAIRE
+${lease.tenant.firstName} ${lease.tenant.lastName}
+${lease.tenant.email || 'Email non renseigné'}
+${lease.tenant.phone || 'Téléphone non renseigné'}
+
+BIEN LOUÉ
+${lease.property.name}
+${lease.property.address}
+${lease.property.postalCode} ${lease.property.city}
+
+PÉRIODE DU BAIL
+Du ${new Date(lease.startDate).toLocaleDateString('fr-FR')} au ${lease.endDate ? new Date(lease.endDate).toLocaleDateString('fr-FR') : 'En cours'}
+Loyer mensuel : ${monthlyRent.toFixed(2)} € (Loyer: ${lease.rentAmount.toFixed(2)} € + Charges: ${lease.chargesAmount.toFixed(2)} €)
+Jour de paiement : ${lease.paymentDueDay}
+
+═══════════════════════════════════════════════════════════════
+          HISTORIQUE DES 24 DERNIERS MOIS
+═══════════════════════════════════════════════════════════════
+
+`;
+
+    monthlyRows.forEach(row => {
+      content += `
+─────────────────────────────────────────────────────────────
+
+MOIS : ${row.monthLabel}
+Type de reçu : ${
+  row.receiptType === 'full' ? 'Quittance de loyer' :
+  row.receiptType === 'partial' ? 'Reçu partiel' :
+  row.receiptType === 'overpayment' ? 'Trop-perçu' :
+  'Loyer impayé'
+}
+
+Loyer dû :                         ${row.monthlyRent.toFixed(2)} €
+Montant payé :                     ${row.totalPaid.toFixed(2)} €
+Solde avant paiement :             ${row.balanceBefore.toFixed(2)} €
+Solde après paiement :             ${row.balanceAfter.toFixed(2)} €
+
+`;
+
+      if (row.payments.length > 0) {
+        content += `Paiements reçus :\n`;
+        row.payments.forEach(p => {
+          content += `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €`;
+          if (p.notes) content += ` (${p.notes})`;
+          content += `\n`;
+        });
+      } else {
+        content += `Aucun paiement reçu\n`;
+      }
+    });
+
+    content += `
+═══════════════════════════════════════════════════════════════
+
+Document généré automatiquement par le système de gestion locative.
+
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historique-paiements-${lease.tenant.lastName}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const handleExportCsv = () => {
+    if (!lease) return;
+
+    // CSV Header
+    let csvContent = 'Mois,Loyer dû (€),Montant payé (€),Solde avant (€),Solde après (€),Type de reçu,Date paiement,Montant paiement (€),Notes\n';
+
+    // CSV Rows
+    monthlyRows.forEach(row => {
+      const receiptTypeLabel =
+        row.receiptType === 'full' ? 'Quittance de loyer' :
+        row.receiptType === 'partial' ? 'Reçu partiel' :
+        row.receiptType === 'overpayment' ? 'Trop-perçu' :
+        'Loyer impayé';
+
+      if (row.payments.length > 0) {
+        // One row per payment
+        row.payments.forEach(p => {
+          const notes = p.notes ? p.notes.replace(/"/g, '""') : ''; // Escape quotes
+          csvContent += `"${row.monthLabel}",${row.monthlyRent.toFixed(2)},${row.totalPaid.toFixed(2)},${row.balanceBefore.toFixed(2)},${row.balanceAfter.toFixed(2)},"${receiptTypeLabel}","${new Date(p.paymentDate).toLocaleDateString('fr-FR')}",${p.amount.toFixed(2)},"${notes}"\n`;
+        });
+      } else {
+        // Row with no payment
+        csvContent += `"${row.monthLabel}",${row.monthlyRent.toFixed(2)},${row.totalPaid.toFixed(2)},${row.balanceBefore.toFixed(2)},${row.balanceAfter.toFixed(2)},"${receiptTypeLabel}","","",""\n`;
+      }
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historique-paiements-${lease.tenant.lastName}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   const handleDownloadReceipt = async (month: string, receiptType: string) => {
     if (!lease) return;
 
-    // For unpaid months, generate a special receipt
-    if (receiptType === 'unpaid') {
-      const monthRow = monthlyRows.find(r => r.month === month);
-      if (!monthRow) return;
-
-      // Generate unpaid receipt content
-      const content = `AVIS DE LOYER IMPAYÉ\n\n` +
-        `Locataire: ${lease.tenant.firstName} ${lease.tenant.lastName}\n` +
-        `Bien: ${lease.property.name}\n` +
-        `Adresse: ${lease.property.address}, ${lease.property.postalCode} ${lease.property.city}\n\n` +
-        `Mois: ${monthRow.monthLabel}\n` +
-        `Loyer dû: ${monthRow.monthlyRent.toFixed(2)} €\n` +
-        `Montant payé: 0.00 €\n` +
-        `Solde dû: ${Math.abs(monthRow.balanceAfter).toFixed(2)} €\n\n` +
-        `Ce document atteste que le loyer du mois n'a pas été payé.`;
-
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `avis-impaye-${month}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      return;
-    }
-
-    // For paid months, use the first payment's receipt
     const monthRow = monthlyRows.find(r => r.month === month);
-    if (!monthRow || monthRow.payments.length === 0) return;
+    if (!monthRow) return;
 
-    const payment = monthRow.payments[0];
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+    let content = '';
+    let filename = '';
 
-    try {
-      const response = await fetch(`/api/receipts/${payment.id}?type=${receiptType}`);
-      if (!response.ok) {
-        throw new Error('Failed to generate receipt');
-      }
+    // Generate content based on receipt type
+    if (receiptType === 'unpaid') {
+      // AVIS DE LOYER IMPAYÉ
+      content = `═══════════════════════════════════════════════════════
+              AVIS DE LOYER IMPAYÉ
+═══════════════════════════════════════════════════════
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `receipt-${month}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Error downloading receipt:', error);
-      alert('Échec du téléchargement du reçu');
+Période : ${monthRow.monthLabel}
+Généré le : ${currentDate}
+
+─────────────────────────────────────────────────────
+
+LOCATAIRE
+${lease.tenant.firstName} ${lease.tenant.lastName}
+${lease.tenant.email || 'Email non renseigné'}
+${lease.tenant.phone || 'Téléphone non renseigné'}
+
+BIEN LOUÉ
+${lease.property.name}
+${lease.property.address}
+${lease.property.postalCode} ${lease.property.city}
+
+─────────────────────────────────────────────────────
+
+DÉTAILS DU LOYER
+
+Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
+  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
+  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+
+Montant payé :                     0,00 €
+Solde dû après ce mois :           ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
+
+─────────────────────────────────────────────────────
+
+Ce document atteste que le loyer du mois de ${monthRow.monthLabel}
+n'a pas été réglé à la date d'édition de cet avis.
+
+═══════════════════════════════════════════════════════`;
+      filename = `avis-impaye-${month}.txt`;
+    } else if (receiptType === 'full') {
+      // QUITTANCE DE LOYER
+      content = `═══════════════════════════════════════════════════════
+              QUITTANCE DE LOYER
+═══════════════════════════════════════════════════════
+
+Période : ${monthRow.monthLabel}
+Généré le : ${currentDate}
+
+─────────────────────────────────────────────────────
+
+LOCATAIRE
+${lease.tenant.firstName} ${lease.tenant.lastName}
+${lease.tenant.email || 'Email non renseigné'}
+${lease.tenant.phone || 'Téléphone non renseigné'}
+
+BIEN LOUÉ
+${lease.property.name}
+${lease.property.address}
+${lease.property.postalCode} ${lease.property.city}
+
+─────────────────────────────────────────────────────
+
+DÉTAILS DU LOYER
+
+Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
+  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
+  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+
+Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
+
+Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
+Solde après paiement :             ${monthRow.balanceAfter.toFixed(2)} €
+
+PAIEMENTS REÇUS :
+${monthRow.payments.map(p =>
+  `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
+).join('\n')}
+
+─────────────────────────────────────────────────────
+
+Je soussigné(e), bailleur du bien immobilier désigné
+ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
+${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre
+du loyer et des charges pour la période du ${monthRow.monthLabel}.
+
+Cette quittance annule tous les reçus qui auraient pu
+être donnés précédemment en cas d'acomptes versés sur
+la période en question.
+
+═══════════════════════════════════════════════════════`;
+      filename = `quittance-loyer-${month}.txt`;
+    } else if (receiptType === 'partial') {
+      // REÇU PARTIEL
+      content = `═══════════════════════════════════════════════════════
+              REÇU DE PAIEMENT PARTIEL
+═══════════════════════════════════════════════════════
+
+Période : ${monthRow.monthLabel}
+Généré le : ${currentDate}
+
+─────────────────────────────────────────────────────
+
+LOCATAIRE
+${lease.tenant.firstName} ${lease.tenant.lastName}
+${lease.tenant.email || 'Email non renseigné'}
+${lease.tenant.phone || 'Téléphone non renseigné'}
+
+BIEN LOUÉ
+${lease.property.name}
+${lease.property.address}
+${lease.property.postalCode} ${lease.property.city}
+
+─────────────────────────────────────────────────────
+
+DÉTAILS DU LOYER
+
+Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
+  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
+  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+
+Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
+Reste à payer :                    ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
+
+Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
+Solde après paiement :             ${monthRow.balanceAfter.toFixed(2)} €
+
+PAIEMENTS REÇUS :
+${monthRow.payments.map(p =>
+  `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
+).join('\n')}
+
+─────────────────────────────────────────────────────
+
+Je soussigné(e), bailleur du bien immobilier désigné
+ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
+${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre
+d'un paiement partiel pour la période du ${monthRow.monthLabel}.
+
+ATTENTION : Ce document ne constitue pas une quittance
+de loyer. Le solde restant dû de ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
+devra être réglé.
+
+═══════════════════════════════════════════════════════`;
+      filename = `recu-partiel-${month}.txt`;
+    } else if (receiptType === 'overpayment') {
+      // REÇU DE TROP-PERÇU
+      content = `═══════════════════════════════════════════════════════
+              REÇU DE PAIEMENT - TROP-PERÇU
+═══════════════════════════════════════════════════════
+
+Période : ${monthRow.monthLabel}
+Généré le : ${currentDate}
+
+─────────────────────────────────────────────────────
+
+LOCATAIRE
+${lease.tenant.firstName} ${lease.tenant.lastName}
+${lease.tenant.email || 'Email non renseigné'}
+${lease.tenant.phone || 'Téléphone non renseigné'}
+
+BIEN LOUÉ
+${lease.property.name}
+${lease.property.address}
+${lease.property.postalCode} ${lease.property.city}
+
+─────────────────────────────────────────────────────
+
+DÉTAILS DU LOYER
+
+Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
+  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
+  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+
+Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
+Excédent (trop-perçu) :            +${monthRow.balanceAfter.toFixed(2)} €
+
+Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
+Solde après paiement :             +${monthRow.balanceAfter.toFixed(2)} €
+
+PAIEMENTS REÇUS :
+${monthRow.payments.map(p =>
+  `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
+).join('\n')}
+
+─────────────────────────────────────────────────────
+
+Je soussigné(e), bailleur du bien immobilier désigné
+ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
+${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € pour
+la période du ${monthRow.monthLabel}.
+
+Le montant versé est supérieur au loyer dû, générant
+un crédit de ${monthRow.balanceAfter.toFixed(2)} € qui sera déduit du
+prochain loyer ou remboursé selon accord entre les parties.
+
+═══════════════════════════════════════════════════════`;
+      filename = `recu-trop-percu-${month}.txt`;
     }
+
+    // Download the file
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   if (loading) {
@@ -349,7 +667,31 @@ export default function LeasePaymentsPage() {
 
         {/* Monthly Payments Table */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-semibold mb-4">{t('historyHeading')}</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">{t('historyHeading')}</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportTxt}
+                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center gap-2"
+                title="Exporter l'historique en .txt"
+              >
+                📄 Exporter TXT
+              </button>
+              <button
+                onClick={handleExportCsv}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                title="Exporter l'historique en .csv"
+              >
+                📊 Exporter CSV
+              </button>
+              <button
+                onClick={() => setShowAddPayment(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                + Ajouter un paiement
+              </button>
+            </div>
+          </div>
 
           {monthlyRows.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
@@ -513,6 +855,87 @@ export default function LeasePaymentsPage() {
                 Enregistrer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Payment Modal */}
+      {showAddPayment && lease && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Ajouter un paiement</h3>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowAddPayment(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <strong>{lease.tenant.firstName} {lease.tenant.lastName}</strong>
+                <br />
+                {lease.property.name}
+              </p>
+            </div>
+
+            <form onSubmit={handleAddPayment}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Montant (€)
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  step="0.01"
+                  defaultValue={monthlyRent.toFixed(2)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date de paiement
+                </label>
+                <input
+                  type="date"
+                  name="paymentDate"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (optionnel)
+                </label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  onClick={() => setShowAddPayment(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Enregistrer le paiement
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
