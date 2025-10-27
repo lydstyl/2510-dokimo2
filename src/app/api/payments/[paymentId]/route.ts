@@ -4,7 +4,7 @@ import { prisma } from '@/infrastructure/database/prisma';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -12,7 +12,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { paymentId } = params;
+    const { paymentId } = await params;
     const body = await request.json();
     const { amount, paymentDate, notes } = body;
 
@@ -45,7 +45,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -53,7 +53,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { paymentId } = params;
+    const { paymentId } = await params;
 
     // Delete the payment
     await prisma.payment.delete({

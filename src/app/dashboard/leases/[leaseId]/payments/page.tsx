@@ -66,10 +66,22 @@ export default function LeasePaymentsPage() {
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaseDetails();
   }, [leaseId, router]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeDropdown && !(event.target as Element).closest('.relative')) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activeDropdown]);
 
   const fetchLeaseDetails = async () => {
     try {
@@ -388,6 +400,46 @@ Document généré automatiquement par le système de gestion locative.
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+  };
+
+  const handleDownloadReceiptPdf = async (month: string, receiptType: string) => {
+    if (!lease) return;
+
+    const monthRow = monthlyRows.find(r => r.month === month);
+    if (!monthRow) return;
+
+    // Get the first payment of the month (or use month info if no payment)
+    const paymentId = monthRow.payments.length > 0 ? monthRow.payments[0].id : null;
+
+    if (!paymentId) {
+      alert('Aucun paiement trouvé pour générer un reçu PDF');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/receipts-pdf/${paymentId}?type=${receiptType}`);
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Filename is already set by the server in Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch ? filenameMatch[1] : `receipt-${month}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF receipt:', error);
+      alert('Erreur lors du téléchargement du reçu PDF');
+    }
   };
 
   const handleDownloadReceipt = async (month: string, receiptType: string) => {
@@ -798,12 +850,38 @@ prochain loyer ou remboursé selon accord entre les parties.
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleDownloadReceipt(row.month, row.receiptType)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Télécharger
-                        </button>
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={() => setActiveDropdown(activeDropdown === row.month ? null : row.month)}
+                            className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                          >
+                            Télécharger ▼
+                          </button>
+                          {activeDropdown === row.month && (
+                            <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    handleDownloadReceipt(row.month, row.receiptType);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  📄 Format TXT
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleDownloadReceiptPdf(row.month, row.receiptType);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  📕 Format PDF
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

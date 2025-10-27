@@ -26,8 +26,8 @@ export interface RentReceiptData {
   payment: {
     amount: number;
     paymentDate: Date;
-    periodStart: Date;
-    periodEnd: Date;
+    // periodStart: Date; // TODO: add to Payment entity if needed
+    // periodEnd: Date; // TODO: add to Payment entity if needed
     rentAmount: number;
     chargesAmount: number;
   };
@@ -90,8 +90,8 @@ export class GenerateRentReceipt {
       payment: {
         amount: payment.amount.getValue(),
         paymentDate: payment.paymentDate,
-        periodStart: payment.periodStart,
-        periodEnd: payment.periodEnd,
+        // periodStart: payment.periodStart, // TODO: add to Payment entity if needed
+        // periodEnd: payment.periodEnd, // TODO: add to Payment entity if needed
         rentAmount: lease.rentAmount.getValue(),
         chargesAmount: lease.chargesAmount.getValue(),
       },

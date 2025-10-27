@@ -10,13 +10,15 @@ import { GenerateRentReceipt } from '@/use-cases/GenerateRentReceipt';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { paymentId } = await params;
 
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
@@ -32,7 +34,7 @@ export async function GET(
       landlordRepo
     );
 
-    const receiptData = await useCase.execute(params.paymentId);
+    const receiptData = await useCase.execute(paymentId);
 
     return NextResponse.json(receiptData);
   } catch (error: any) {

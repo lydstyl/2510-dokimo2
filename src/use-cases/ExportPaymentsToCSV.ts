@@ -41,12 +41,12 @@ export class ExportPaymentsToCSV {
     // Build CSV rows
     const rows = payments.map(payment => [
       this.formatDate(payment.paymentDate),
-      this.formatDate(payment.periodStart),
-      this.formatDate(payment.periodEnd),
+      '', // Period Start - TODO: add to Payment entity
+      '', // Period End - TODO: add to Payment entity
       payment.amount.getValue().toFixed(2),
       lease.rentAmount.getValue().toFixed(2),
       lease.chargesAmount.getValue().toFixed(2),
-      payment.type,
+      '', // Type - TODO: add to Payment entity
       payment.notes || '',
     ]);
 

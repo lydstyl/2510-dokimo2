@@ -26,7 +26,18 @@ export async function createSession(userId: string, email: string): Promise<stri
 export async function verifySession(token: string): Promise<SessionData | null> {
   try {
     const verified = await jwtVerify(token, SECRET_KEY);
-    return verified.payload as SessionData;
+    const payload = verified.payload;
+
+    // Validate payload has required fields
+    if (
+      typeof payload.userId === 'string' &&
+      typeof payload.email === 'string' &&
+      typeof payload.isAuthenticated === 'boolean'
+    ) {
+      return payload as unknown as SessionData;
+    }
+
+    return null;
   } catch (error) {
     return null;
   }

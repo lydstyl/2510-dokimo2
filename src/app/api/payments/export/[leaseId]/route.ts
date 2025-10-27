@@ -7,7 +7,7 @@ import { ExportPaymentsToCSV } from '@/use-cases/ExportPaymentsToCSV';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { leaseId: string } }
+  { params }: { params: Promise<{ leaseId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -15,16 +15,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { leaseId } = await params;
+
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
 
     const useCase = new ExportPaymentsToCSV(paymentRepo, leaseRepo);
-    const csvContent = await useCase.execute(params.leaseId);
+    const csvContent = await useCase.execute(leaseId);
 
     return new NextResponse(csvContent, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="payments-${params.leaseId}.csv"`,
+        'Content-Disposition': `attachment; filename="payments-${leaseId}.csv"`,
       },
     });
   } catch (error: any) {
