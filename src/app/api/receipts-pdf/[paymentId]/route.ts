@@ -4,7 +4,9 @@ import { prisma } from '@/infrastructure/database/prisma';
 import { PdfReceiptGenerator } from '@/features/receipt/infrastructure/PdfReceiptGenerator';
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
+import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
+import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
 
 export async function GET(
   request: NextRequest,
@@ -49,39 +51,28 @@ export async function GET(
     // Get applicable rent for the payment date (considering rent revisions)
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
-    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
+    const paymentRepo = new PrismaPaymentRepository(prisma);
 
+    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
     const applicableRent = await getApplicableRent.execute(
       payment.leaseId,
       new Date(payment.paymentDate)
     );
 
-    // Calculate balances
-    const monthlyRent = applicableRent.totalAmount;
-    const startDate = new Date(payment.lease.startDate);
-    const paymentDate = new Date(payment.paymentDate);
+    // Calculate balances correctly taking into account all rent revisions
+    const calculateBalance = new CalculateLeaseBalance(
+      rentRevisionRepo,
+      leaseRepo,
+      paymentRepo
+    );
 
-    const monthsSinceStart = Math.floor(
-      (paymentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-    ) + 1;
+    const balances = await calculateBalance.executeForPayment(
+      payment.leaseId,
+      payment.id
+    );
 
-    // Get all payments up to this one to calculate running balance
-    const previousPayments = await prisma.payment.findMany({
-      where: {
-        leaseId: payment.leaseId,
-        paymentDate: { lte: payment.paymentDate },
-      },
-      orderBy: { paymentDate: 'asc' },
-    });
-
-    const totalPaidBefore = previousPayments
-      .filter(p => p.id !== payment.id)
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const totalPaidAfter = totalPaidBefore + payment.amount;
-    const expectedTotal = monthlyRent * monthsSinceStart;
-    const balanceBefore = totalPaidBefore - expectedTotal;
-    const balanceAfter = totalPaidAfter - expectedTotal;
+    const balanceBefore = balances.balanceBefore;
+    const balanceAfter = balances.balanceAfter;
 
     // Generate receipt number
     const receiptNumber = `REC-${payment.id.slice(0, 8).toUpperCase()}`;
