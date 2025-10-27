@@ -67,6 +67,10 @@ export default function LeasePaymentsPage() {
   const [editNotes, setEditNotes] = useState('');
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [editingRentMonth, setEditingRentMonth] = useState<string | null>(null);
+  const [newRentAmount, setNewRentAmount] = useState('');
+  const [newChargesAmount, setNewChargesAmount] = useState('');
+  const [rentChangeReason, setRentChangeReason] = useState('');
 
   useEffect(() => {
     fetchLeaseDetails();
@@ -96,7 +100,7 @@ export default function LeasePaymentsPage() {
 
       const leaseData: Lease = await response.json();
       setLease(leaseData);
-      calculateMonthlyRows(leaseData);
+      await calculateMonthlyRows(leaseData);
     } catch (error) {
       console.error('Error fetching lease details:', error);
     } finally {
@@ -104,8 +108,7 @@ export default function LeasePaymentsPage() {
     }
   };
 
-  const calculateMonthlyRows = (leaseData: Lease) => {
-    const monthlyRent = leaseData.rentAmount + leaseData.chargesAmount;
+  const calculateMonthlyRows = async (leaseData: Lease) => {
     const startDate = new Date(leaseData.startDate);
     const endDate = leaseData.endDate ? new Date(leaseData.endDate) : new Date();
 
@@ -124,6 +127,28 @@ export default function LeasePaymentsPage() {
     // Take last 24 months
     const last24Months = months.slice(-24);
 
+    // Fetch rent history for these months
+    let rentHistory: { [month: string]: number } = {};
+    try {
+      const startMonth = last24Months[0];
+      const endMonth = last24Months[last24Months.length - 1];
+      const response = await fetch(`/api/leases/${leaseData.id}/rent-history?startMonth=${startMonth}&endMonth=${endMonth}`);
+      if (response.ok) {
+        const history = await response.json();
+        rentHistory = history.reduce((acc: any, item: any) => {
+          acc[item.month] = item.totalAmount;
+          return acc;
+        }, {});
+      }
+    } catch (error) {
+      console.error('Error fetching rent history:', error);
+      // Fallback to fixed rent if API fails
+      const fallbackRent = leaseData.rentAmount + leaseData.chargesAmount;
+      last24Months.forEach(month => {
+        rentHistory[month] = fallbackRent;
+      });
+    }
+
     // Group payments by month
     const paymentsByMonth = new Map<string, Payment[]>();
     leaseData.payments.forEach(payment => {
@@ -141,6 +166,9 @@ export default function LeasePaymentsPage() {
     last24Months.forEach(month => {
       const monthPayments = paymentsByMonth.get(month) || [];
       const totalPaid = monthPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Get rent for this specific month (may vary due to rent revisions)
+      const monthlyRent = rentHistory[month] || (leaseData.rentAmount + leaseData.chargesAmount);
 
       const balanceBefore = runningBalance;
       runningBalance = runningBalance + totalPaid - monthlyRent;
@@ -247,6 +275,57 @@ export default function LeasePaymentsPage() {
       }
     } catch (error) {
       alert('Échec de la suppression du paiement');
+    }
+  };
+
+  const handleEditRent = (month: string) => {
+    if (!lease) return;
+    setEditingRentMonth(month);
+    setNewRentAmount(lease.rentAmount.toString());
+    setNewChargesAmount(lease.chargesAmount.toString());
+    setRentChangeReason('');
+  };
+
+  const handleSaveRentChange = async () => {
+    if (!lease || !editingRentMonth) return;
+
+    const rentAmount = parseFloat(newRentAmount);
+    const chargesAmount = parseFloat(newChargesAmount);
+
+    if (isNaN(rentAmount) || isNaN(chargesAmount) || rentAmount < 0 || chargesAmount < 0) {
+      alert('Veuillez entrer des montants valides');
+      return;
+    }
+
+    try {
+      // Create rent revision with effective date = first day of selected month
+      const effectiveDate = new Date(`${editingRentMonth}-01`);
+
+      const response = await fetch('/api/rent-revisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leaseId: lease.id,
+          effectiveDate: effectiveDate.toISOString(),
+          rentAmount,
+          chargesAmount,
+          reason: rentChangeReason || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        setEditingRentMonth(null);
+        setNewRentAmount('');
+        setNewChargesAmount('');
+        setRentChangeReason('');
+        fetchLeaseDetails(); // Refresh to recalculate with new rent
+      } else {
+        const error = await response.json();
+        alert('Erreur: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Error saving rent change:', error);
+      alert('Échec de la modification du loyer');
     }
   };
 
@@ -816,7 +895,16 @@ prochain loyer ou remboursé selon accord entre les parties.
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">€{row.monthlyRent.toFixed(2)}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-gray-900">€{row.monthlyRent.toFixed(2)}</div>
+                          <button
+                            onClick={() => handleEditRent(row.month)}
+                            className="text-gray-400 hover:text-blue-600 text-xs"
+                            title="Modifier le loyer pour ce mois et les suivants"
+                          >
+                            ✏️
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
@@ -1039,6 +1127,103 @@ prochain loyer ou remboursé selon accord entre les parties.
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Rent Modal */}
+      {editingRentMonth && lease && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Modifier le loyer</h3>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setEditingRentMonth(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                ⚠️ Cette modification s'appliquera à partir de{' '}
+                <strong>{monthlyRows.find(r => r.month === editingRentMonth)?.monthLabel}</strong>
+                {' '}et tous les mois suivants. Les soldes seront recalculés automatiquement.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Loyer hors charges (€)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={newRentAmount}
+                onChange={(e) => setNewRentAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Exemple: 1000.00"
+              />
+              <p className="text-xs text-gray-500 mt-1">Loyer actuel: €{lease.rentAmount.toFixed(2)}</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Charges (€)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={newChargesAmount}
+                onChange={(e) => setNewChargesAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Exemple: 150.00"
+              />
+              <p className="text-xs text-gray-500 mt-1">Charges actuelles: €{lease.chargesAmount.toFixed(2)}</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Loyer total
+              </label>
+              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-lg font-bold">
+                €{(parseFloat(newRentAmount || '0') + parseFloat(newChargesAmount || '0')).toFixed(2)}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Raison de la modification (optionnel)
+              </label>
+              <select
+                value={rentChangeReason}
+                onChange={(e) => setRentChangeReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Sélectionner --</option>
+                <option value="IRL_REVISION">Révision IRL (indice de référence des loyers)</option>
+                <option value="AGREEMENT">Accord amiable</option>
+                <option value="WORK_COMPLETION">Fin de travaux</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                onClick={() => setEditingRentMonth(null)}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveRentChange}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Enregistrer
+              </button>
+            </div>
           </div>
         </div>
       )}
