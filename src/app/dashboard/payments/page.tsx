@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface Tenant {
   id: string;
@@ -45,6 +46,8 @@ interface LeaseStatus {
 }
 
 export default function PaymentsPage() {
+  const t = useTranslations('payments');
+  const tNav = useTranslations('navigation');
   const router = useRouter();
   const [leaseStatuses, setLeaseStatuses] = useState<LeaseStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +141,7 @@ export default function PaymentsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{t('loading')}</div>
       </div>
     );
   }
@@ -150,9 +153,9 @@ export default function PaymentsPage() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-4">
               <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
-                ← Back to Dashboard
+                {tNav('backToDashboard')}
               </a>
-              <h1 className="text-xl font-bold">Payments</h1>
+              <h1 className="text-xl font-bold">{t('title')}</h1>
             </div>
           </div>
         </div>
@@ -160,24 +163,24 @@ export default function PaymentsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-6">Record Payments</h2>
+          <h2 className="text-2xl font-semibold mb-6">{t('heading')}</h2>
 
           {leaseStatuses.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <p>No active leases found. Create a lease to start tracking payments.</p>
+              <p>{t('emptyState')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Rent</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Payment</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.tenant')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.property')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.monthlyRent')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.lastPayment')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.balance')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.status')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -196,7 +199,7 @@ export default function PaymentsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">€{monthlyRent.toFixed(2)}</div>
                         <div className="text-xs text-gray-500">
-                          Due day {lease.paymentDueDay}
+                          {t('dueDay')} {lease.paymentDueDay}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -206,11 +209,11 @@ export default function PaymentsPage() {
                               €{lastPaymentAmount?.toFixed(2)}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {lastPaymentDate.toLocaleDateString()}
+                              {lastPaymentDate.toLocaleDateString('fr-FR')}
                             </div>
                           </>
                         ) : (
-                          <span className="text-sm text-gray-500">No payments</span>
+                          <span className="text-sm text-gray-500">{t('noPayments')}</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -224,7 +227,7 @@ export default function PaymentsPage() {
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {isUpToDate ? 'Up to date' : 'Late'}
+                          {isUpToDate ? t('status.upToDate') : t('status.late')}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -235,7 +238,7 @@ export default function PaymentsPage() {
                             if (modal) modal.classList.remove('hidden');
                           }}
                         >
-                          + Add Payment
+                          {t('addButton')}
                         </button>
                       </td>
                     </tr>
@@ -255,7 +258,7 @@ export default function PaymentsPage() {
           >
             <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Add Payment</h3>
+                <h3 className="text-lg font-medium">{t('modal.title')}</h3>
                 <button
                   className="text-gray-400 hover:text-gray-600"
                   onClick={() => {
@@ -278,7 +281,7 @@ export default function PaymentsPage() {
               <form onSubmit={(e) => handleAddPayment(e, lease.id)}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount (€)
+                    {t('modal.amount')}
                   </label>
                   <input
                     type="number"
@@ -292,7 +295,7 @@ export default function PaymentsPage() {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Date
+                    {t('modal.date')}
                   </label>
                   <input
                     type="date"
@@ -305,7 +308,7 @@ export default function PaymentsPage() {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (optional)
+                    {t('modal.notes')}
                   </label>
                   <textarea
                     name="notes"
@@ -323,13 +326,13 @@ export default function PaymentsPage() {
                       if (modal) modal.classList.add('hidden');
                     }}
                   >
-                    Cancel
+                    {t('modal.cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
-                    Save Payment
+                    {t('modal.save')}
                   </button>
                 </div>
               </form>

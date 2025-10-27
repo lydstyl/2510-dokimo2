@@ -4,7 +4,7 @@ import { prisma } from '@/infrastructure/database/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -14,7 +14,7 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const receiptType = searchParams.get('type') || 'full';
-    const { paymentId } = params;
+    const { paymentId } = await params;
 
     // Fetch the payment with all related data
     const payment = await prisma.payment.findUnique({

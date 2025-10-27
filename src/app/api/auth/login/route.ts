@@ -14,16 +14,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = await validateCredentials(email, password);
+    const { valid, userId } = await validateCredentials(email, password);
 
-    if (!isValid) {
+    if (!valid || !userId) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    const token = await createSession(email);
+    const token = await createSession(userId, email);
     await setSessionCookie(token);
 
     return NextResponse.json({ success: true });

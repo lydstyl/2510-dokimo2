@@ -19,12 +19,13 @@ export function getCredentials(): Credentials {
   return { email, password };
 }
 
-export async function validateCredentials(email: string, password: string): Promise<boolean> {
+export async function validateCredentials(email: string, password: string): Promise<{ valid: boolean; userId?: string }> {
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
-    return false;
+    return { valid: false };
   }
 
-  return bcrypt.compare(password, user.password);
+  const valid = await bcrypt.compare(password, user.password);
+  return { valid, userId: valid ? user.id : undefined };
 }

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
 import { PrismaClient } from '@prisma/client';
+import { getTranslations } from 'next-intl/server';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,9 @@ export default async function LeasesPage() {
   if (!session) {
     redirect('/login');
   }
+
+  const t = await getTranslations('leases');
+  const tNav = await getTranslations('navigation');
 
   const leases = await prisma.lease.findMany({
     include: {
@@ -37,9 +41,9 @@ export default async function LeasesPage() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-4">
               <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
-                ← Back to Dashboard
+                {tNav('backToDashboard')}
               </a>
-              <h1 className="text-xl font-bold">Leases</h1>
+              <h1 className="text-xl font-bold">{t('title')}</h1>
             </div>
             <span className="text-sm text-gray-600">{session.email}</span>
           </div>
@@ -49,15 +53,15 @@ export default async function LeasesPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">Manage Leases</h2>
+            <h2 className="text-2xl font-semibold">{t('heading')}</h2>
             <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-              + Create Lease
+              {t('addButton')}
             </button>
           </div>
 
           {leases.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <p>No leases found. Create your first lease to get started.</p>
+              <p>{t('emptyState')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -83,87 +87,87 @@ export default async function LeasesPage() {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {isActive ? 'Active' : 'Ended'}
+                        {isActive ? t('status.active') : t('status.ended')}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <p className="text-xs text-gray-500">Tenant</p>
+                        <p className="text-xs text-gray-500">{t('card.tenant')}</p>
                         <p className="text-sm font-medium text-gray-900">
                           {lease.tenant.firstName} {lease.tenant.lastName}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Landlord</p>
+                        <p className="text-xs text-gray-500">{t('card.landlord')}</p>
                         <p className="text-sm font-medium text-gray-900">
                           {lease.property.landlord.name}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Monthly Rent</p>
+                        <p className="text-xs text-gray-500">{t('card.monthlyRent')}</p>
                         <p className="text-sm font-medium text-gray-900">
                           €{monthlyTotal.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          (€{lease.rentAmount} + €{lease.chargesAmount} charges)
+                          (€{lease.rentAmount} + €{lease.chargesAmount} {t('charges')})
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Payment Due</p>
+                        <p className="text-xs text-gray-500">{t('card.paymentDue')}</p>
                         <p className="text-sm font-medium text-gray-900">
-                          Day {lease.paymentDueDay} of month
+                          {t('dayOfMonth', { day: lease.paymentDueDay })}
                         </p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <p className="text-xs text-gray-500">Start Date</p>
+                        <p className="text-xs text-gray-500">{t('card.startDate')}</p>
                         <p className="text-sm font-medium text-gray-900">
-                          {new Date(lease.startDate).toLocaleDateString('en-GB')}
+                          {new Date(lease.startDate).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">End Date</p>
+                        <p className="text-xs text-gray-500">{t('card.endDate')}</p>
                         <p className="text-sm font-medium text-gray-900">
-                          {lease.endDate ? new Date(lease.endDate).toLocaleDateString('en-GB') : 'Open-ended'}
+                          {lease.endDate ? new Date(lease.endDate).toLocaleDateString('fr-FR') : t('openEnded')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Total Payments</p>
+                        <p className="text-xs text-gray-500">{t('card.totalPayments')}</p>
                         <p className="text-sm font-medium text-gray-900">
                           €{totalPaid.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {lease.payments.length} payment{lease.payments.length !== 1 ? 's' : ''}
+                          {lease.payments.length} {lease.payments.length === 1 ? t('payment') : t('payments')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Last Payment</p>
+                        <p className="text-xs text-gray-500">{t('card.lastPayment')}</p>
                         <p className="text-sm font-medium text-gray-900">
                           {lastPayment
-                            ? new Date(lastPayment.paymentDate).toLocaleDateString('en-GB')
-                            : 'No payments yet'}
+                            ? new Date(lastPayment.paymentDate).toLocaleDateString('fr-FR')
+                            : t('noPayments')}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex gap-2 mt-4 pt-4 border-t">
                       <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
-                        View Details
+                        {t('actions.viewDetails')}
                       </button>
                       <button className="text-sm text-blue-600 hover:text-blue-900 font-medium">
-                        Record Payment
+                        {t('actions.recordPayment')}
                       </button>
                       <a
                         href={`/dashboard/payments/${lease.id}`}
                         className="text-sm text-blue-600 hover:text-blue-900 font-medium"
                       >
-                        View Payments
+                        {t('actions.viewPayments')}
                       </a>
                       <button className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto">
-                        Edit
+                        {t('actions.edit')}
                       </button>
                     </div>
                   </div>

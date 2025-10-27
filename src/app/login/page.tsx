@@ -2,8 +2,10 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 export default function LoginPage() {
+  const t = useTranslations('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,13 +26,13 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        setError(data.error || 'Login failed');
+        setError(data.error || t('loginFailed'));
         return;
       }
 
       router.push('/dashboard');
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(t('errorOccurred'));
     } finally {
       setLoading(false);
     }
@@ -39,12 +41,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Rental Management Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">{t('title')}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t('email')}
             </label>
             <input
               id="email"
@@ -58,7 +60,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {t('password')}
             </label>
             <input
               id="password"
@@ -79,7 +81,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('loggingIn') : t('loginButton')}
           </button>
         </form>
       </div>

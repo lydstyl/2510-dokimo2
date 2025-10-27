@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface Tenant {
   id: string;
@@ -47,6 +48,8 @@ interface PaymentWithBalance {
 }
 
 export default function LeasePaymentsPage() {
+  const t = useTranslations('paymentDetails');
+  const tNav = useTranslations('navigation');
   const router = useRouter();
   const params = useParams();
   const leaseId = params.leaseId as string;
@@ -159,7 +162,7 @@ export default function LeasePaymentsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{t('loading')}</div>
       </div>
     );
   }
@@ -167,7 +170,7 @@ export default function LeasePaymentsPage() {
   if (!lease) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-600">Lease not found</div>
+        <div className="text-gray-600">{t('notFound')}</div>
       </div>
     );
   }
@@ -181,9 +184,9 @@ export default function LeasePaymentsPage() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-4">
               <a href="/dashboard/payments" className="text-blue-600 hover:text-blue-800">
-                ← Back to Payments
+                {tNav('backToPayments')}
               </a>
-              <h1 className="text-xl font-bold">Payment Details</h1>
+              <h1 className="text-xl font-bold">{t('title')}</h1>
             </div>
           </div>
         </div>
@@ -197,50 +200,50 @@ export default function LeasePaymentsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-gray-600">Property</p>
+              <p className="text-gray-600">{t('leaseSummary.property')}</p>
               <p className="font-medium">{lease.property.name}</p>
               <p className="text-gray-500">{lease.property.address}</p>
               <p className="text-gray-500">{lease.property.postalCode} {lease.property.city}</p>
             </div>
             <div>
-              <p className="text-gray-600">Contact</p>
-              <p className="font-medium">{lease.tenant.email || 'No email'}</p>
-              <p className="text-gray-500">{lease.tenant.phone || 'No phone'}</p>
+              <p className="text-gray-600">{t('leaseSummary.contact')}</p>
+              <p className="font-medium">{lease.tenant.email || t('noEmail')}</p>
+              <p className="text-gray-500">{lease.tenant.phone || t('noPhone')}</p>
             </div>
             <div>
-              <p className="text-gray-600">Monthly Rent</p>
+              <p className="text-gray-600">{t('leaseSummary.monthlyRent')}</p>
               <p className="font-medium text-lg">€{monthlyRent.toFixed(2)}</p>
-              <p className="text-gray-500">Rent: €{lease.rentAmount.toFixed(2)} + Charges: €{lease.chargesAmount.toFixed(2)}</p>
+              <p className="text-gray-500">{t('leaseSummary.rent')} €{lease.rentAmount.toFixed(2)} + {t('leaseSummary.charges')} €{lease.chargesAmount.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-600">Lease Period</p>
+              <p className="text-gray-600">{t('leaseSummary.leasePeriod')}</p>
               <p className="font-medium">
-                {new Date(lease.startDate).toLocaleDateString()} - {lease.endDate ? new Date(lease.endDate).toLocaleDateString() : 'Ongoing'}
+                {new Date(lease.startDate).toLocaleDateString('fr-FR')} - {lease.endDate ? new Date(lease.endDate).toLocaleDateString('fr-FR') : t('leaseSummary.ongoing')}
               </p>
-              <p className="text-gray-500">Due day: {lease.paymentDueDay}</p>
+              <p className="text-gray-500">{t('leaseSummary.dueDay')} {lease.paymentDueDay}</p>
             </div>
           </div>
         </div>
 
         {/* Payments Table */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-semibold mb-4">Payment History (Last 24 Payments)</h3>
+          <h3 className="text-xl font-semibold mb-4">{t('historyHeading')}</h3>
 
           {paymentsWithBalances.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <p>No payments recorded yet.</p>
+              <p>{t('emptyState')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owed Before</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owed After</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.date')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.amount')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.owedBefore')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.owedAfter')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.receipt')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -248,10 +251,10 @@ export default function LeasePaymentsPage() {
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {new Date(payment.paymentDate).toLocaleDateString()}
+                          {new Date(payment.paymentDate).toLocaleDateString('fr-FR')}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {new Date(payment.createdAt).toLocaleDateString()}
+                          {new Date(payment.createdAt).toLocaleDateString('fr-FR')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -277,9 +280,9 @@ export default function LeasePaymentsPage() {
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-blue-100 text-blue-800'
                         }`}>
-                          {receiptType === 'full' && 'Rent Receipt'}
-                          {receiptType === 'partial' && 'Partial Receipt'}
-                          {receiptType === 'overpayment' && 'Overpayment'}
+                          {receiptType === 'full' && t('receiptTypes.rent')}
+                          {receiptType === 'partial' && t('receiptTypes.partial')}
+                          {receiptType === 'overpayment' && t('receiptTypes.overpayment')}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -287,7 +290,7 @@ export default function LeasePaymentsPage() {
                           onClick={() => handleDownloadReceipt(payment.id, receiptType)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          Download
+                          {t('download')}
                         </button>
                       </td>
                     </tr>
@@ -300,7 +303,7 @@ export default function LeasePaymentsPage() {
           {paymentsWithBalances.length > 0 && paymentsWithBalances[0].payment.notes && (
             <div className="mt-4 p-4 bg-gray-50 rounded">
               <p className="text-sm text-gray-600">
-                <strong>Latest Payment Notes:</strong> {paymentsWithBalances[0].payment.notes}
+                <strong>{t('latestNotes')}</strong> {paymentsWithBalances[0].payment.notes}
               </p>
             </div>
           )}

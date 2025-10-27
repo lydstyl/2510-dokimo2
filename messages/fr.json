@@ -1,0 +1,217 @@
+{
+  "metadata": {
+    "title": "Système de Gestion Locative",
+    "description": "Gérer les biens immobiliers, les baux et les paiements"
+  },
+  "login": {
+    "title": "Connexion - Gestion Locative",
+    "email": "Email",
+    "password": "Mot de passe",
+    "loginButton": "Se connecter",
+    "loggingIn": "Connexion en cours...",
+    "loginFailed": "Échec de la connexion",
+    "errorOccurred": "Une erreur s'est produite. Veuillez réessayer."
+  },
+  "navigation": {
+    "backToDashboard": "← Retour au tableau de bord",
+    "backToPayments": "← Retour aux paiements",
+    "logout": "Déconnexion"
+  },
+  "dashboard": {
+    "title": "Gestion Locative",
+    "welcome": "Bienvenue dans la Gestion Locative",
+    "instruction": "Sélectionnez une section ci-dessus pour gérer vos biens immobiliers, propriétaires, locataires et baux.",
+    "cards": {
+      "landlords": {
+        "title": "Propriétaires",
+        "description": "Gérer les propriétaires"
+      },
+      "properties": {
+        "title": "Biens",
+        "description": "Gérer les biens"
+      },
+      "tenants": {
+        "title": "Locataires",
+        "description": "Gérer les locataires"
+      },
+      "leases": {
+        "title": "Baux",
+        "description": "Gérer les baux"
+      },
+      "payments": {
+        "title": "Paiements",
+        "description": "Gérer les paiements"
+      }
+    }
+  },
+  "landlords": {
+    "title": "Propriétaires",
+    "heading": "Gérer les Propriétaires",
+    "addButton": "+ Ajouter un propriétaire",
+    "emptyState": "Aucun propriétaire trouvé. Créez votre premier propriétaire pour commencer.",
+    "table": {
+      "name": "Nom",
+      "type": "Type",
+      "contact": "Contact",
+      "address": "Adresse",
+      "properties": "Biens",
+      "actions": "Actions"
+    },
+    "types": {
+      "naturalPerson": "Personne physique",
+      "legalEntity": "Personne morale"
+    },
+    "siret": "SIRET:",
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    }
+  },
+  "properties": {
+    "title": "Biens",
+    "heading": "Gérer les Biens",
+    "addButton": "+ Ajouter un bien",
+    "emptyState": "Aucun bien trouvé. Créez votre premier bien pour commencer.",
+    "table": {
+      "name": "Nom",
+      "type": "Type",
+      "address": "Adresse",
+      "landlord": "Propriétaire",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "rented": "Loué",
+      "vacant": "Vacant"
+    },
+    "rentedTo": "à",
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    }
+  },
+  "tenants": {
+    "title": "Locataires",
+    "heading": "Gérer les Locataires",
+    "addButton": "+ Ajouter un locataire",
+    "emptyState": "Aucun locataire trouvé. Créez votre premier locataire pour commencer.",
+    "table": {
+      "name": "Nom",
+      "contact": "Contact",
+      "activeLeases": "Baux actifs",
+      "totalPayments": "Total paiements",
+      "actions": "Actions"
+    },
+    "noActiveLeases": "Aucun bail actif",
+    "payment": "paiement",
+    "payments": "paiements",
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    }
+  },
+  "leases": {
+    "title": "Baux",
+    "heading": "Gérer les Baux",
+    "addButton": "+ Créer un bail",
+    "emptyState": "Aucun bail trouvé. Créez votre premier bail pour commencer.",
+    "card": {
+      "tenant": "Locataire",
+      "landlord": "Propriétaire",
+      "monthlyRent": "Loyer mensuel",
+      "paymentDue": "Date d'échéance",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "totalPayments": "Total paiements",
+      "lastPayment": "Dernier paiement"
+    },
+    "status": {
+      "active": "Actif",
+      "ended": "Terminé"
+    },
+    "charges": "charges",
+    "dayOfMonth": "Le {day} de chaque mois",
+    "openEnded": "Durée indéterminée",
+    "noPayments": "Aucun paiement",
+    "payment": "paiement",
+    "payments": "paiements",
+    "actions": {
+      "viewDetails": "Voir détails",
+      "recordPayment": "Enregistrer paiement",
+      "viewPayments": "Voir paiements",
+      "edit": "Modifier"
+    }
+  },
+  "payments": {
+    "title": "Paiements",
+    "heading": "Enregistrer les Paiements",
+    "emptyState": "Aucun bail actif trouvé. Créez un bail pour commencer à suivre les paiements.",
+    "table": {
+      "tenant": "Locataire",
+      "property": "Bien",
+      "monthlyRent": "Loyer mensuel",
+      "lastPayment": "Dernier paiement",
+      "balance": "Solde",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "dueDay": "Jour d'échéance",
+    "noPayments": "Aucun paiement",
+    "addButton": "+ Ajouter un paiement",
+    "modal": {
+      "title": "Ajouter un paiement",
+      "amount": "Montant (€)",
+      "date": "Date de paiement",
+      "notes": "Notes (optionnel)",
+      "cancel": "Annuler",
+      "save": "Enregistrer le paiement"
+    },
+    "status": {
+      "upToDate": "À jour",
+      "late": "En retard"
+    },
+    "loading": "Chargement..."
+  },
+  "paymentDetails": {
+    "title": "Détails des Paiements",
+    "leaseSummary": {
+      "property": "Bien",
+      "contact": "Contact",
+      "monthlyRent": "Loyer mensuel",
+      "leasePeriod": "Période du bail",
+      "rent": "Loyer:",
+      "charges": "Charges:",
+      "dueDay": "Jour d'échéance:",
+      "ongoing": "En cours"
+    },
+    "noEmail": "Pas d'email",
+    "noPhone": "Pas de téléphone",
+    "historyHeading": "Historique des Paiements (24 derniers)",
+    "table": {
+      "date": "Date",
+      "amount": "Montant",
+      "owedBefore": "Dû avant",
+      "owedAfter": "Dû après",
+      "receipt": "Reçu",
+      "actions": "Actions"
+    },
+    "emptyState": "Aucun paiement enregistré.",
+    "receiptTypes": {
+      "rent": "Quittance de loyer",
+      "partial": "Reçu partiel",
+      "overpayment": "Trop-perçu"
+    },
+    "download": "Télécharger",
+    "latestNotes": "Notes du dernier paiement:",
+    "notFound": "Bail introuvable",
+    "loading": "Chargement..."
+  },
+  "common": {
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "loading": "Chargement...",
+    "currency": "€"
+  }
+}

@@ -4,7 +4,7 @@ import { prisma } from '@/infrastructure/database/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { leaseId: string } }
+  { params }: { params: Promise<{ leaseId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { leaseId } = params;
+    const { leaseId } = await params;
 
     const lease = await prisma.lease.findUnique({
       where: { id: leaseId },

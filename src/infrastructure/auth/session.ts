@@ -8,12 +8,13 @@ const SECRET_KEY = new TextEncoder().encode(
 const COOKIE_NAME = 'session';
 
 export interface SessionData {
+  userId: string;
   email: string;
   isAuthenticated: boolean;
 }
 
-export async function createSession(email: string): Promise<string> {
-  const token = await new SignJWT({ email, isAuthenticated: true })
+export async function createSession(userId: string, email: string): Promise<string> {
+  const token = await new SignJWT({ userId, email, isAuthenticated: true })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')
