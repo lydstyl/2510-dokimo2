@@ -35,6 +35,9 @@ export class PrismaLandlordRepository implements ILandlordRepository {
         email: landlord.email?.getValue(),
         phone: landlord.phone,
         siret: landlord.siret,
+        managerName: landlord.managerName,
+        managerEmail: landlord.managerEmail?.getValue(),
+        managerPhone: landlord.managerPhone,
         userId: landlord.userId,
       },
     });
@@ -52,6 +55,9 @@ export class PrismaLandlordRepository implements ILandlordRepository {
         email: landlord.email?.getValue(),
         phone: landlord.phone,
         siret: landlord.siret,
+        managerName: landlord.managerName,
+        managerEmail: landlord.managerEmail?.getValue(),
+        managerPhone: landlord.managerPhone,
       },
     });
 
@@ -73,6 +79,9 @@ export class PrismaLandlordRepository implements ILandlordRepository {
       email: raw.email ? Email.create(raw.email) : undefined,
       phone: raw.phone,
       siret: raw.siret,
+      managerName: raw.managerName,
+      managerEmail: raw.managerEmail ? Email.create(raw.managerEmail) : undefined,
+      managerPhone: raw.managerPhone,
       userId: raw.userId,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

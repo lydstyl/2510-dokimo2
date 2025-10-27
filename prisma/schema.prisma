@@ -22,18 +22,21 @@ model User {
 
 // Landlord can be a natural person or legal entity (SCI)
 model Landlord {
-  id        String     @id @default(cuid())
-  name      String
-  type      String     // "NATURAL_PERSON" or "LEGAL_ENTITY"
-  address   String
-  email     String?
-  phone     String?
-  siret     String?    // for legal entities
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  properties Property[]
+  id             String     @id @default(cuid())
+  name           String
+  type           String     // "NATURAL_PERSON" or "LEGAL_ENTITY"
+  address        String
+  email          String?
+  phone          String?
+  siret          String?    // for legal entities
+  managerName    String?    // for legal entities - name of the manager
+  managerEmail   String?    // for legal entities - manager's email
+  managerPhone   String?    // for legal entities - manager's phone
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  properties     Property[]
 
   @@index([userId])
 }
