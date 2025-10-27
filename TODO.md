@@ -1,8 +1,7 @@
-- Je veux pouvoir faire des points sur les paiements d'un locataire
-- Je veux pouvoir faire une révision de loyer donc changer le loyer à une certaine date
-- Je veux pouvoir ajouter et modifier un historique de paiements moi même et donc par exemple d'ajouter ou de modifier des paiements avec différentes dates et que automatiquement je puisse télécharger les quittances, les reçu partiels, les trop perçu en fonction des loyers qui peuvent évoluer au fils du temps suite à une révisions de loyer par exemple.
-  Je veux voir l'historique dans un tableau et pouvoir le modifier, dans ce tableau on doit voir la date de paiement, le lot, le loyer + charges de cette période, le montant du paiement, la différence c'est à dire 0 si le paiement couvre le loyer, un nombre négatif s'il y a un trop perçu de loyer et un nombre positif s'il s'agit d'un reçu partiel de loyer.
+- Je souhaite pouvoir télécharger les reçus comme la quittance et autres au format .pdf en plus du format .txt
+
+- Je veux pouvoir à chaque ligne du tableau Historique des Paiements (24 derniers) modifier le loyer via un modal. On doit pouvoir modifier le loyer hors charge et les charges. Si une modification à lieu alors la ligne modifié et les lignes suivantes donc le mois modifié mais aussi les prochains mois doivent être recalculés avec le nouveau loyer dû.
+
 - feature révision de loyer
-- feature telecharger historique au format .txt
-- feature évolution des charges
-- feature compteur d'eau
+
+- feature calcul des nouvelles charges avec feature compteur d'eau, factures etc.
