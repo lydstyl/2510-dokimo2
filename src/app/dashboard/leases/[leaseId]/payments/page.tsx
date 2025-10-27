@@ -136,8 +136,21 @@ export default function LeasePaymentsPage() {
 
       // Determine receipt type
       let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
+
+      // Si aucun paiement ce mois
       if (totalPaid === 0) {
-        receiptType = 'unpaid';
+        // Si le locataire avait un crédit avant (balanceBefore > 0), il utilise son crédit
+        if (balanceBefore > 0) {
+          // Vérifier si le crédit couvre tout le loyer
+          if (balanceAfter >= -0.01) {
+            receiptType = 'full'; // Le crédit a couvert tout le loyer
+          } else {
+            receiptType = 'partial'; // Le crédit n'a pas couvert tout le loyer
+          }
+        } else {
+          // Pas de crédit et pas de paiement = loyer impayé
+          receiptType = 'unpaid';
+        }
       } else if (balanceAfter > 0) {
         // Si le solde après est positif, c'est un trop-perçu
         receiptType = 'overpayment';
@@ -429,6 +442,8 @@ n'a pas été réglé à la date d'édition de cet avis.
       filename = `avis-impaye-${month}.txt`;
     } else if (receiptType === 'full') {
       // QUITTANCE DE LOYER
+      const creditUsed = monthRow.totalPaid === 0 && monthRow.balanceBefore > 0;
+
       content = `═══════════════════════════════════════════════════════
               QUITTANCE DE LOYER
 ═══════════════════════════════════════════════════════
@@ -456,22 +471,26 @@ Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
   • Loyer :                        ${lease.rentAmount.toFixed(2)} €
   • Charges :                      ${lease.chargesAmount.toFixed(2)} €
 
-Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
+Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
 
-Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
-Solde après paiement :             ${monthRow.balanceAfter.toFixed(2)} €
+Solde avant ce mois :              ${monthRow.balanceBefore.toFixed(2)} €
+Solde après ce mois :              ${monthRow.balanceAfter.toFixed(2)} €
 
-PAIEMENTS REÇUS :
+${creditUsed ? `UTILISATION DU CRÉDIT :
+Le loyer de ce mois a été intégralement réglé par imputation
+sur le crédit existant de ${monthRow.balanceBefore.toFixed(2)} €.
+` : `PAIEMENTS REÇUS :
 ${monthRow.payments.map(p =>
   `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
 ).join('\n')}
-
+`}
 ─────────────────────────────────────────────────────
 
 Je soussigné(e), bailleur du bien immobilier désigné
-ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
-${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre
-du loyer et des charges pour la période du ${monthRow.monthLabel}.
+ci-dessus, ${creditUsed ?
+  `atteste que le loyer pour la période du ${monthRow.monthLabel}\na été intégralement réglé par utilisation du crédit existant.` :
+  `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
+}
 
 Cette quittance annule tous les reçus qui auraient pu
 être donnés précédemment en cas d'acomptes versés sur
@@ -481,6 +500,8 @@ la période en question.
       filename = `quittance-loyer-${month}.txt`;
     } else if (receiptType === 'partial') {
       // REÇU PARTIEL
+      const creditUsed = monthRow.totalPaid === 0 && monthRow.balanceBefore > 0;
+
       content = `═══════════════════════════════════════════════════════
               REÇU DE PAIEMENT PARTIEL
 ═══════════════════════════════════════════════════════
@@ -508,23 +529,27 @@ Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
   • Loyer :                        ${lease.rentAmount.toFixed(2)} €
   • Charges :                      ${lease.chargesAmount.toFixed(2)} €
 
-Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
+Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
 Reste à payer :                    ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
 
-Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
-Solde après paiement :             ${monthRow.balanceAfter.toFixed(2)} €
+Solde avant ce mois :              ${monthRow.balanceBefore.toFixed(2)} €
+Solde après ce mois :              ${monthRow.balanceAfter.toFixed(2)} €
 
-PAIEMENTS REÇUS :
+${creditUsed ? `UTILISATION DU CRÉDIT :
+Le crédit existant de ${monthRow.balanceBefore.toFixed(2)} € a été utilisé
+pour régler partiellement le loyer de ce mois.
+` : `PAIEMENTS REÇUS :
 ${monthRow.payments.map(p =>
   `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
 ).join('\n')}
-
+`}
 ─────────────────────────────────────────────────────
 
 Je soussigné(e), bailleur du bien immobilier désigné
-ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
-${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre
-d'un paiement partiel pour la période du ${monthRow.monthLabel}.
+ci-dessus, ${creditUsed ?
+  `atteste qu'un crédit de ${monthRow.balanceBefore.toFixed(2)} € a été imputé\nsur le loyer pour la période du ${monthRow.monthLabel}.` :
+  `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
+}
 
 ATTENTION : Ce document ne constitue pas une quittance
 de loyer. Le solde restant dû de ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
