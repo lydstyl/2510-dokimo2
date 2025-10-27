@@ -1,36 +1,21 @@
 # Rental Management System
 
-A clean architecture Next.js application for managing rental properties, leases, and generating rental documents.
-
-## Architecture
-
-This project follows **Clean Architecture** principles with clear separation of concerns:
-
-```
-src/
-├── domain/              # Domain layer (pure TypeScript, no dependencies)
-│   ├── entities/        # Business entities (Landlord, Property, Tenant, Lease, Payment)
-│   └── value-objects/   # Value objects (Money, Email)
-├── use-cases/           # Application layer (business rules)
-│   ├── interfaces/      # Repository interfaces
-│   └── *.ts             # Use case implementations
-├── infrastructure/      # Infrastructure layer
-│   ├── database/        # Prisma client
-│   ├── repositories/    # Prisma repository implementations
-│   └── auth/            # Authentication logic
-└── app/                 # Presentation layer (Next.js App Router)
-    ├── api/             # API routes
-    └── */               # Pages and components
-```
+A Next.js application for managing rental properties, leases, and payments with document generation (rent receipts, rent due notices). Built with **Clean Architecture** principles.
 
 ## Tech Stack
 
-- **Next.js 15** (App Router)
-- **TypeScript**
-- **Prisma ORM** with SQLite
-- **Vitest** for testing (TDD on domain/use-case layers)
+- **Next.js 15** (App Router) with TypeScript
+- **Prisma ORM** with SQLite (PostgreSQL ready)
+- **Vitest** for testing
 - **TailwindCSS** for styling
+- **next-intl** for French UI
 - **Jose** for JWT authentication
+
+## Architecture
+
+Clean Architecture with strict layer separation. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+
+**For Claude Code**: See [CLAUDE.md](CLAUDE.md) for development guidelines, conventions, and common pitfalls.
 
 ## Features
 
@@ -44,134 +29,70 @@ src/
 5. **CSV Export**: Export payment history
 6. **Payment Status**: Check if tenants are up-to-date or late with rent
 
-## Getting Started
+## Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
-- npm or yarn
+- npm
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` and set your credentials:
-   ```
-   DATABASE_URL="file:./dev.db"
-   AUTH_EMAIL="admin@example.com"
-   AUTH_PASSWORD="your-secure-password"
-   JWT_SECRET="your-jwt-secret-key"
-   ```
-
-4. Generate Prisma client and run migrations:
-   ```bash
-   npm run prisma:generate
-   npm run prisma:migrate
-   ```
-
-5. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-6. Open [http://localhost:3000](http://localhost:3000)
-
-## Testing
-
-Run tests with Vitest:
-
 ```bash
-# Run all tests
-npm test
+# 1. Install dependencies
+npm install
 
-# Run tests with UI
-npm run test:ui
+# 2. Set up environment
+cp .env.example .env
+# Edit .env with your credentials
 
-# Run tests in watch mode
-npm test -- --watch
+# 3. Set up database
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
+
+# 4. Start development server
+npm run dev
 ```
 
-Tests cover:
-- Domain entities (Landlord, Property, Tenant, Lease, Payment)
-- Value objects (Money, Email)
-- Use cases (CreateLandlord, CreateLease, RecordPayment, CheckPaymentStatus)
+Open [http://localhost:3000](http://localhost:3000) and login with your `.env` credentials.
 
-## Database Schema
+## Development
 
-The Prisma schema includes:
+### Common Commands
 
-- **User**: Single user for authentication
-- **Landlord**: Natural persons or legal entities (SCI)
-- **Property**: Rental properties (apartments, houses, garages, etc.)
-- **Tenant**: Tenants renting properties
-- **Lease**: Links properties with tenants, includes rent and charges
-- **Payment**: Records of rent payments
-- **RentRevision**: Tracks changes to rent over time (for future use)
+```bash
+npm run dev              # Start dev server
+npm run build            # Build for production
+npm test                 # Run tests
+npm run prisma:studio    # Open database GUI
+```
 
-## API Routes
+See [SETUP.md](SETUP.md) for detailed development instructions.
 
-### Authentication
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/me` - Get current session
+### Testing
 
-### Landlords
-- `GET /api/landlords` - List landlords
-- `POST /api/landlords` - Create landlord
+Tests focus on domain and use-case layers (TDD approach):
 
-### Leases
-- `GET /api/leases?propertyId=xxx` - List leases by property
-- `GET /api/leases?tenantId=xxx` - List leases by tenant
-- `POST /api/leases` - Create lease
+```bash
+npm test                 # Run all tests
+npm test -- --watch      # Watch mode
+npm run test:ui          # UI mode
+```
 
-### Payments
-- `GET /api/payments?leaseId=xxx` - List payments for a lease
-- `POST /api/payments` - Record payment
+## Project Documentation
 
-### Documents
-- `GET /api/documents/rent-receipt/[paymentId]` - Generate rent receipt
-- `GET /api/payments/export/[leaseId]` - Export payments as CSV
-
-## Project Structure
-
-### Domain Layer
-Pure TypeScript with no external dependencies. Contains:
-- **Entities**: Business objects with identity and lifecycle
-- **Value Objects**: Immutable objects defined by their attributes
-
-### Use Cases Layer
-Contains business logic and orchestrates domain entities. Depends only on domain layer and defines repository interfaces.
-
-### Infrastructure Layer
-Implements repository interfaces using Prisma and handles authentication.
-
-### Presentation Layer
-Next.js App Router pages, components, and API routes.
-
-## Development Guidelines
-
-1. **TDD for Domain/Use Cases**: Write tests first for domain entities and use cases
-2. **Dependency Rule**: Dependencies point inward (presentation → use cases → domain)
-3. **Repository Pattern**: Use cases depend on interfaces, infrastructure provides implementations
-4. **Pure Domain Logic**: Domain layer has no framework dependencies
+- **[README.md](README.md)** - This file (project overview, quick start)
+- **[CLAUDE.md](CLAUDE.md)** - Development guidelines for Claude Code
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture documentation
+- **[SETUP.md](SETUP.md)** - Complete setup and troubleshooting guide
 
 ## Roadmap
 
-Future features to implement:
-- [ ] Rent revision based on IRL index
+- [ ] Rent revision based on IRL (French rent index)
 - [ ] Email notifications for rent due dates
 - [ ] PDF generation for documents
-- [ ] Multi-user support
+- [ ] Multi-user support with roles
 - [ ] Dashboard analytics
-- [ ] Document templates customization
 
 ## License
 
