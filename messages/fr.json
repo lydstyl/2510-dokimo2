@@ -108,6 +108,21 @@
     "actions": {
       "edit": "Modifier",
       "delete": "Supprimer"
+    },
+    "modal": {
+      "addTitle": "Ajouter un locataire",
+      "editTitle": "Modifier le locataire",
+      "deleteTitle": "Supprimer le locataire",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce locataire ? Cette action est irréversible.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Email (optionnel)",
+      "phone": "Téléphone (optionnel)",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "saving": "Enregistrement...",
+      "deleting": "Suppression..."
     }
   },
   "leases": {

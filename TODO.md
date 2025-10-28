@@ -1,7 +1,3 @@
-- Je veux pouvoir ajouter et modifier ou supprimer un bien dans /properties via une modale.
-
-- Je veux pouvoir ajouter et modifier ou supprimer un locataire dans /tenants via une modale.
-
 - Je veux pouvoir ajouter et modifier ou supprimer un bail dans /leases via une modale.
 
 - Dans la page /leases, je ne veux plus avoir le bouton "Enregistrer paiement" car cette fonctionnalité est dans la page Historique des Paiements (24 derniers).
