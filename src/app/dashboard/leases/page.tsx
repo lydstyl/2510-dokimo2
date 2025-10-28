@@ -53,7 +53,6 @@ export default function LeasesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLeaseForPayment, setSelectedLeaseForPayment] = useState<Lease | null>(null);
   const [isLeaseModalOpen, setIsLeaseModalOpen] = useState(false);
   const [leaseModalMode, setLeaseModalMode] = useState<'add' | 'edit' | 'delete'>('add');
   const [selectedLeaseForModal, setSelectedLeaseForModal] = useState<Lease | null>(null);
@@ -121,39 +120,6 @@ export default function LeasesPage() {
 
   const handleLeaseModalSave = () => {
     fetchData();
-  };
-
-  const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedLeaseForPayment) return;
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-
-    const payload = {
-      leaseId: selectedLeaseForPayment.id,
-      amount: parseFloat(formData.get('amount') as string),
-      paymentDate: formData.get('paymentDate') as string,
-      notes: formData.get('notes') as string || null,
-    };
-
-    try {
-      const response = await fetch('/api/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setSelectedLeaseForPayment(null);
-        fetchData(); // Refresh the leases
-      } else {
-        const error = await response.json();
-        alert('Error: ' + error.error);
-      }
-    } catch (error) {
-      alert('Failed to save payment');
-    }
   };
 
   if (loading) {
@@ -286,12 +252,6 @@ export default function LeasesPage() {
                     </div>
 
                     <div className="flex gap-2 mt-4 pt-4 border-t">
-                      <button
-                        onClick={() => setSelectedLeaseForPayment(lease)}
-                        className="text-sm text-blue-600 hover:text-blue-900 font-medium"
-                      >
-                        {t('actions.recordPayment')}
-                      </button>
                       <a
                         href={`/dashboard/leases/${lease.id}/payments`}
                         className="text-sm text-blue-600 hover:text-blue-900 font-medium"
@@ -318,87 +278,6 @@ export default function LeasesPage() {
           )}
         </div>
       </main>
-
-      {/* Payment Modal */}
-      {selectedLeaseForPayment && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">{t('modal.title')}</h3>
-              <button
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setSelectedLeaseForPayment(null)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                <strong>{selectedLeaseForPayment.tenant.firstName} {selectedLeaseForPayment.tenant.lastName}</strong>
-                <br />
-                {selectedLeaseForPayment.property.name}
-              </p>
-            </div>
-
-            <form onSubmit={handleAddPayment}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('modal.amount')}
-                </label>
-                <input
-                  type="number"
-                  name="amount"
-                  step="0.01"
-                  defaultValue={(selectedLeaseForPayment.rentAmount + selectedLeaseForPayment.chargesAmount).toFixed(2)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('modal.date')}
-                </label>
-                <input
-                  type="date"
-                  name="paymentDate"
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('modal.notes')}
-                </label>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                  onClick={() => setSelectedLeaseForPayment(null)}
-                >
-                  {t('modal.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {t('modal.save')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Lease Modal (Add/Edit/Delete) */}
       <LeaseModal
