@@ -153,7 +153,8 @@
     "actions": {
       "recordPayment": "Enregistrer paiement",
       "viewHistory": "Voir l'historique",
-      "edit": "Modifier"
+      "edit": "Modifier",
+      "delete": "Supprimer"
     },
     "modal": {
       "title": "Ajouter un paiement",
@@ -162,6 +163,26 @@
       "notes": "Notes (optionnel)",
       "cancel": "Annuler",
       "save": "Enregistrer le paiement"
+    },
+    "leaseModal": {
+      "addTitle": "Créer un bail",
+      "editTitle": "Modifier le bail",
+      "deleteTitle": "Supprimer le bail",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce bail ? Cette action est irréversible.",
+      "property": "Bien",
+      "selectProperty": "Sélectionnez un bien",
+      "tenant": "Locataire",
+      "selectTenant": "Sélectionnez un locataire",
+      "startDate": "Date de début",
+      "endDate": "Date de fin (optionnel)",
+      "rentAmount": "Montant du loyer (€)",
+      "chargesAmount": "Montant des charges (€)",
+      "paymentDueDay": "Jour d'échéance (1-31)",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "saving": "Enregistrement...",
+      "deleting": "Suppression..."
     }
   },
   "payments": {

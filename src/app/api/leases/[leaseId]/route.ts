@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
+import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
+import { UpdateLease } from '@/use-cases/UpdateLease';
+import { DeleteLease } from '@/use-cases/DeleteLease';
 
 export async function GET(
   request: NextRequest,
@@ -45,6 +48,90 @@ export async function GET(
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ leaseId: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { leaseId } = await params;
+    const body = await request.json();
+    const { propertyId, tenantId, startDate, endDate, rentAmount, chargesAmount, paymentDueDay } = body;
+
+    if (!propertyId || !tenantId || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const repository = new PrismaLeaseRepository(prisma);
+    const useCase = new UpdateLease(repository);
+
+    const lease = await useCase.execute({
+      id: leaseId,
+      propertyId,
+      tenantId,
+      startDate: new Date(startDate),
+      endDate: endDate ? new Date(endDate) : undefined,
+      rentAmount: Number(rentAmount),
+      chargesAmount: Number(chargesAmount),
+      paymentDueDay: Number(paymentDueDay),
+    });
+
+    return NextResponse.json({
+      id: lease.id,
+      propertyId: lease.propertyId,
+      tenantId: lease.tenantId,
+      startDate: lease.startDate,
+      endDate: lease.endDate,
+      rentAmount: lease.rentAmount.getValue(),
+      chargesAmount: lease.chargesAmount.getValue(),
+      totalAmount: lease.totalAmount.getValue(),
+      paymentDueDay: lease.paymentDueDay,
+      createdAt: lease.createdAt,
+      updatedAt: lease.updatedAt,
+    });
+  } catch (error: any) {
+    console.error('Error updating lease:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: error.message === 'Lease not found' ? 404 : 400 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ leaseId: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { leaseId } = await params;
+
+    const repository = new PrismaLeaseRepository(prisma);
+    const useCase = new DeleteLease(repository);
+
+    await useCase.execute(leaseId);
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error deleting lease:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: error.message === 'Lease not found' ? 404 : 400 }
     );
   }
 }

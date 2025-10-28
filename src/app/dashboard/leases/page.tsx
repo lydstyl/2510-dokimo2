@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { LeaseModal } from '@/components/LeaseModal';
 
 interface Landlord {
   id: string;
@@ -32,6 +33,8 @@ interface Payment {
 
 interface Lease {
   id: string;
+  propertyId: string;
+  tenantId: string;
   rentAmount: number;
   chargesAmount: number;
   paymentDueDay: number;
@@ -47,42 +50,88 @@ export default function LeasesPage() {
   const tNav = useTranslations('navigation');
   const router = useRouter();
   const [leases, setLeases] = useState<Lease[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
+  const [selectedLeaseForPayment, setSelectedLeaseForPayment] = useState<Lease | null>(null);
+  const [isLeaseModalOpen, setIsLeaseModalOpen] = useState(false);
+  const [leaseModalMode, setLeaseModalMode] = useState<'add' | 'edit' | 'delete'>('add');
+  const [selectedLeaseForModal, setSelectedLeaseForModal] = useState<Lease | null>(null);
 
   useEffect(() => {
-    fetchLeases();
+    fetchData();
   }, [router]);
 
-  const fetchLeases = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/leases');
-      if (!response.ok) {
-        if (response.status === 401) {
+      // Fetch leases
+      const leasesResponse = await fetch('/api/leases');
+      if (!leasesResponse.ok) {
+        if (leasesResponse.status === 401) {
           router.push('/login');
           return;
         }
         throw new Error('Failed to fetch leases');
       }
+      const leasesData = await leasesResponse.json();
+      setLeases(leasesData);
 
-      const data = await response.json();
-      setLeases(data);
+      // Fetch properties
+      const propsResponse = await fetch('/api/properties');
+      if (propsResponse.ok) {
+        const propsData = await propsResponse.json();
+        setProperties(propsData);
+      }
+
+      // Fetch tenants
+      const tenantsResponse = await fetch('/api/tenants');
+      if (tenantsResponse.ok) {
+        const tenantsData = await tenantsResponse.json();
+        setTenants(tenantsData);
+      }
     } catch (error) {
-      console.error('Error fetching leases:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAddLeaseClick = () => {
+    setSelectedLeaseForModal(null);
+    setLeaseModalMode('add');
+    setIsLeaseModalOpen(true);
+  };
+
+  const handleEditLeaseClick = (lease: Lease) => {
+    setSelectedLeaseForModal(lease);
+    setLeaseModalMode('edit');
+    setIsLeaseModalOpen(true);
+  };
+
+  const handleDeleteLeaseClick = (lease: Lease) => {
+    setSelectedLeaseForModal(lease);
+    setLeaseModalMode('delete');
+    setIsLeaseModalOpen(true);
+  };
+
+  const handleLeaseModalClose = () => {
+    setIsLeaseModalOpen(false);
+    setSelectedLeaseForModal(null);
+  };
+
+  const handleLeaseModalSave = () => {
+    fetchData();
+  };
+
   const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedLease) return;
+    if (!selectedLeaseForPayment) return;
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
     const payload = {
-      leaseId: selectedLease.id,
+      leaseId: selectedLeaseForPayment.id,
       amount: parseFloat(formData.get('amount') as string),
       paymentDate: formData.get('paymentDate') as string,
       notes: formData.get('notes') as string || null,
@@ -96,8 +145,8 @@ export default function LeasesPage() {
       });
 
       if (response.ok) {
-        setSelectedLease(null);
-        fetchLeases(); // Refresh the leases
+        setSelectedLeaseForPayment(null);
+        fetchData(); // Refresh the leases
       } else {
         const error = await response.json();
         alert('Error: ' + error.error);
@@ -134,7 +183,10 @@ export default function LeasesPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">{t('heading')}</h2>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            <button
+              onClick={handleAddLeaseClick}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
               {t('addButton')}
             </button>
           </div>
@@ -235,7 +287,7 @@ export default function LeasesPage() {
 
                     <div className="flex gap-2 mt-4 pt-4 border-t">
                       <button
-                        onClick={() => setSelectedLease(lease)}
+                        onClick={() => setSelectedLeaseForPayment(lease)}
                         className="text-sm text-blue-600 hover:text-blue-900 font-medium"
                       >
                         {t('actions.recordPayment')}
@@ -246,8 +298,17 @@ export default function LeasesPage() {
                       >
                         {t('actions.viewHistory')}
                       </a>
-                      <button className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto">
+                      <button
+                        onClick={() => handleEditLeaseClick(lease)}
+                        className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto"
+                      >
                         {t('actions.edit')}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLeaseClick(lease)}
+                        className="text-sm text-red-600 hover:text-red-900 font-medium"
+                      >
+                        {t('actions.delete')}
                       </button>
                     </div>
                   </div>
@@ -259,14 +320,14 @@ export default function LeasesPage() {
       </main>
 
       {/* Payment Modal */}
-      {selectedLease && (
+      {selectedLeaseForPayment && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">{t('modal.title')}</h3>
               <button
                 className="text-gray-400 hover:text-gray-600"
-                onClick={() => setSelectedLease(null)}
+                onClick={() => setSelectedLeaseForPayment(null)}
               >
                 ✕
               </button>
@@ -274,9 +335,9 @@ export default function LeasesPage() {
 
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                <strong>{selectedLease.tenant.firstName} {selectedLease.tenant.lastName}</strong>
+                <strong>{selectedLeaseForPayment.tenant.firstName} {selectedLeaseForPayment.tenant.lastName}</strong>
                 <br />
-                {selectedLease.property.name}
+                {selectedLeaseForPayment.property.name}
               </p>
             </div>
 
@@ -289,7 +350,7 @@ export default function LeasesPage() {
                   type="number"
                   name="amount"
                   step="0.01"
-                  defaultValue={(selectedLease.rentAmount + selectedLease.chargesAmount).toFixed(2)}
+                  defaultValue={(selectedLeaseForPayment.rentAmount + selectedLeaseForPayment.chargesAmount).toFixed(2)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -323,7 +384,7 @@ export default function LeasesPage() {
                 <button
                   type="button"
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                  onClick={() => setSelectedLease(null)}
+                  onClick={() => setSelectedLeaseForPayment(null)}
                 >
                   {t('modal.cancel')}
                 </button>
@@ -338,6 +399,17 @@ export default function LeasesPage() {
           </div>
         </div>
       )}
+
+      {/* Lease Modal (Add/Edit/Delete) */}
+      <LeaseModal
+        isOpen={isLeaseModalOpen}
+        onClose={handleLeaseModalClose}
+        onSave={handleLeaseModalSave}
+        lease={selectedLeaseForModal}
+        mode={leaseModalMode}
+        properties={properties}
+        tenants={tenants}
+      />
     </div>
   );
 }
