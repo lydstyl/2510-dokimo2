@@ -391,7 +391,7 @@ export default function LeasePaymentsPage() {
   };
 
   const handleDownloadPaymentNotice = async (monthOffset: number) => {
-    if (!lease) return;
+    if (!lease || monthlyRows.length === 0) return;
 
     // Calculate target month (0 = current month, 1 = next month)
     const now = new Date();
@@ -402,17 +402,47 @@ export default function LeasePaymentsPage() {
     const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     const monthLabel = `${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
 
-    // Calculate previous balance (balance before target month)
-    let previousBalance = 0;
-    const targetMonthRow = monthlyRows.find(r => r.month === targetMonth);
-    if (targetMonthRow) {
-      previousBalance = targetMonthRow.balanceBefore;
-    } else {
-      // If target month not in rows, calculate from last available row
-      if (monthlyRows.length > 0) {
-        const lastRow = monthlyRows[monthlyRows.length - 1];
-        previousBalance = lastRow.balanceAfter;
+    // Find the current month row (first row in the table)
+    const currentMonthRow = monthlyRows[0];
+
+    // Calculate balances based on monthOffset
+    let previousBalance = 0; // Solde antérieur (Dû avant)
+    let paymentsThisMonth = 0;
+    let rentAmount = currentRentAmount || lease.rentAmount;
+    let chargesAmount = currentChargesAmount || lease.chargesAmount;
+    let totalToPay = 0; // Dû après
+
+    if (monthOffset === 0) {
+      // Mois actuel: utiliser les données de la première ligne du tableau
+      previousBalance = currentMonthRow.balanceBefore; // Dû avant
+      paymentsThisMonth = currentMonthRow.totalPaid; // Paiements effectués ce mois
+      totalToPay = currentMonthRow.balanceAfter; // Dû après
+      // Use the monthly rent from the current row (accounts for revisions)
+      rentAmount = currentMonthRow.monthlyRent - chargesAmount;
+    } else if (monthOffset === 1) {
+      // Mois prochain:
+      // Solde antérieur = Dû après du mois actuel
+      previousBalance = currentMonthRow.balanceAfter;
+      paymentsThisMonth = 0; // Pas de paiements dans le futur
+      // Total à payer = solde antérieur + loyer + charges - paiements (0)
+      totalToPay = previousBalance + rentAmount + chargesAmount;
+    }
+
+    // Fetch landlord details to get address
+    let landlordAddress = 'Non renseigné';
+    let landlordEmail = undefined;
+    let landlordPhone = undefined;
+
+    try {
+      const landlordResponse = await fetch(`/api/landlords/${lease.property.landlord.id}`);
+      if (landlordResponse.ok) {
+        const landlordData = await landlordResponse.json();
+        landlordAddress = landlordData.address || 'Non renseigné';
+        landlordEmail = landlordData.email || undefined;
+        landlordPhone = landlordData.phone || undefined;
       }
+    } catch (error) {
+      console.error('Error fetching landlord details:', error);
     }
 
     // Prepare data for PDF generator
@@ -420,9 +450,9 @@ export default function LeasePaymentsPage() {
       landlord: {
         name: lease.property.landlord.name,
         type: lease.property.landlord.type,
-        address: `${lease.property.landlord.id}`, // We'll need to fetch landlord address
-        email: undefined,
-        phone: undefined,
+        address: landlordAddress,
+        email: landlordEmail,
+        phone: landlordPhone,
       },
       tenant: {
         firstName: lease.tenant.firstName,
@@ -437,30 +467,18 @@ export default function LeasePaymentsPage() {
         postalCode: lease.property.postalCode,
       },
       lease: {
-        rentAmount: lease.rentAmount,
-        chargesAmount: lease.chargesAmount,
+        rentAmount: rentAmount,
+        chargesAmount: chargesAmount,
         paymentDueDay: lease.paymentDueDay,
       },
       notice: {
         month: monthLabel,
         issueDate: new Date(),
         previousBalance: previousBalance,
+        paymentsThisMonth: paymentsThisMonth,
+        totalToPay: totalToPay,
       },
     };
-
-    // Fetch landlord details to get address
-    try {
-      const landlordResponse = await fetch(`/api/landlords/${lease.property.landlord.id}`);
-      if (landlordResponse.ok) {
-        const landlordData = await landlordResponse.json();
-        noticeData.landlord.address = landlordData.address || 'Non renseigné';
-        noticeData.landlord.email = landlordData.email || undefined;
-        noticeData.landlord.phone = landlordData.phone || undefined;
-      }
-    } catch (error) {
-      console.error('Error fetching landlord details:', error);
-      noticeData.landlord.address = 'Non renseigné';
-    }
 
     // Dynamic import to avoid server-side issues
     const { PdfPaymentNoticeGenerator } = await import('@/features/receipt/infrastructure/PdfPaymentNoticeGenerator');

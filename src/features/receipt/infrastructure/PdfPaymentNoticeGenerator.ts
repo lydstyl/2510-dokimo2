@@ -28,7 +28,9 @@ export interface PaymentNoticeData {
   notice: {
     month: string; // Format: "Janvier 2025"
     issueDate: Date;
-    previousBalance: number;
+    previousBalance: number; // "Dû avant" = solde antérieur
+    paymentsThisMonth: number; // Montant payé ce mois (0 pour mois prochain)
+    totalToPay: number; // "Dû après" = total à payer
   };
 }
 
@@ -197,16 +199,22 @@ export class PdfPaymentNoticeGenerator {
 
     const rentAmount = data.lease.rentAmount;
     const chargesAmount = data.lease.chargesAmount;
-    const totalMonthly = rentAmount + chargesAmount;
     const previousBalance = data.notice.previousBalance;
-    const totalToPay = totalMonthly + previousBalance;
+    const paymentsThisMonth = data.notice.paymentsThisMonth;
+    const totalToPay = data.notice.totalToPay;
 
     // Due day
     pdf.text(`Jour d'échéance : ${data.lease.paymentDueDay}`, this.MARGIN_LEFT, y);
     y += this.LINE_HEIGHT + 2;
 
-    // Previous balance
-    pdf.text(`Solde antérieur : ${previousBalance.toFixed(2)} €`, this.MARGIN_LEFT, y);
+    // Previous balance (Dû avant) - no negative numbers
+    if (previousBalance < 0) {
+      pdf.text(`Solde antérieur (non payé) : ${Math.abs(previousBalance).toFixed(2)} €`, this.MARGIN_LEFT, y);
+    } else if (previousBalance > 0) {
+      pdf.text(`Solde antérieur (trop payé) : ${previousBalance.toFixed(2)} €`, this.MARGIN_LEFT, y);
+    } else {
+      pdf.text(`Solde antérieur : 0,00 €`, this.MARGIN_LEFT, y);
+    }
     y += this.LINE_HEIGHT;
 
     // Rent breakdown
@@ -214,12 +222,31 @@ export class PdfPaymentNoticeGenerator {
     y += this.LINE_HEIGHT;
 
     pdf.text(`Charges : ${chargesAmount.toFixed(2)} €`, this.MARGIN_LEFT, y);
+    y += this.LINE_HEIGHT;
+
+    // Payments this month
+    pdf.text(`Paiements de ce mois : ${paymentsThisMonth.toFixed(2)} €`, this.MARGIN_LEFT, y);
     y += this.LINE_HEIGHT + 2;
 
-    // Total to pay
+    // Total to pay (Dû après) - no negative numbers
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
-    pdf.text(`TOTAL À PAYER : ${totalToPay.toFixed(2)} €`, this.MARGIN_LEFT, y);
+
+    if (totalToPay < 0) {
+      // Tenant owes money
+      pdf.text(`TOTAL À PAYER : ${Math.abs(totalToPay).toFixed(2)} €`, this.MARGIN_LEFT, y);
+    } else if (totalToPay > 0) {
+      // Tenant overpaid
+      pdf.text(`TOTAL À PAYER : 0,00 €`, this.MARGIN_LEFT, y);
+      y += this.LINE_HEIGHT;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text(`(${totalToPay.toFixed(2)} € trop perçu ce mois)`, this.MARGIN_LEFT, y);
+    } else {
+      // Exactly paid
+      pdf.text(`TOTAL À PAYER : 0,00 €`, this.MARGIN_LEFT, y);
+    }
+
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(10);
     y += this.LINE_HEIGHT + 5;
