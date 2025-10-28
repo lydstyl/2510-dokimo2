@@ -69,6 +69,8 @@ export default function LeasePaymentsPage() {
   const [lease, setLease] = useState<Lease | null>(null);
   const [monthlyRows, setMonthlyRows] = useState<MonthlyRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentRentAmount, setCurrentRentAmount] = useState(0);
+  const [currentChargesAmount, setCurrentChargesAmount] = useState(0);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState('');
@@ -137,6 +139,7 @@ export default function LeasePaymentsPage() {
 
     // Fetch rent history for these months
     let rentHistory: { [month: string]: number } = {};
+    let rentDetails: { [month: string]: { rent: number; charges: number } } = {};
     try {
       const startMonth = last24Months[0];
       const endMonth = last24Months[last24Months.length - 1];
@@ -147,6 +150,20 @@ export default function LeasePaymentsPage() {
           acc[item.month] = item.totalAmount;
           return acc;
         }, {});
+        rentDetails = history.reduce((acc: any, item: any) => {
+          acc[item.month] = { rent: item.rentAmount, charges: item.chargesAmount };
+          return acc;
+        }, {});
+
+        // Find the most recent rent amounts (from the last month in history)
+        if (history.length > 0) {
+          const mostRecent = history[history.length - 1];
+          setCurrentRentAmount(mostRecent.rentAmount);
+          setCurrentChargesAmount(mostRecent.chargesAmount);
+        } else {
+          setCurrentRentAmount(leaseData.rentAmount);
+          setCurrentChargesAmount(leaseData.chargesAmount);
+        }
       }
     } catch (error) {
       console.error('Error fetching rent history:', error);
@@ -154,7 +171,10 @@ export default function LeasePaymentsPage() {
       const fallbackRent = leaseData.rentAmount + leaseData.chargesAmount;
       last24Months.forEach(month => {
         rentHistory[month] = fallbackRent;
+        rentDetails[month] = { rent: leaseData.rentAmount, charges: leaseData.chargesAmount };
       });
+      setCurrentRentAmount(leaseData.rentAmount);
+      setCurrentChargesAmount(leaseData.chargesAmount);
     }
 
     // Group payments by month
@@ -877,7 +897,10 @@ prochain loyer ou remboursé selon accord entre les parties.
     );
   }
 
-  const monthlyRent = lease.rentAmount + lease.chargesAmount;
+  // Use current rent amounts (most recent after revisions) or fall back to lease amounts
+  const displayRent = currentRentAmount || lease.rentAmount;
+  const displayCharges = currentChargesAmount || lease.chargesAmount;
+  const monthlyRent = displayRent + displayCharges;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -915,7 +938,7 @@ prochain loyer ou remboursé selon accord entre les parties.
             <div>
               <p className="text-gray-600">{t('leaseSummary.monthlyRent')}</p>
               <p className="font-medium text-lg">€{monthlyRent.toFixed(2)}</p>
-              <p className="text-gray-500">{t('leaseSummary.rent')} €{lease.rentAmount.toFixed(2)} + {t('leaseSummary.charges')} €{lease.chargesAmount.toFixed(2)}</p>
+              <p className="text-gray-500">{t('leaseSummary.rent')} €{displayRent.toFixed(2)} + {t('leaseSummary.charges')} €{displayCharges.toFixed(2)}</p>
             </div>
             <div>
               <p className="text-gray-600">{t('leaseSummary.leasePeriod')}</p>
