@@ -424,8 +424,10 @@ export default function LeasePaymentsPage() {
       // Solde antérieur = Dû après du mois actuel
       previousBalance = currentMonthRow.balanceAfter;
       paymentsThisMonth = 0; // Pas de paiements dans le futur
-      // Total à payer = solde antérieur + loyer + charges - paiements (0)
-      totalToPay = previousBalance + rentAmount + chargesAmount;
+      // Total à payer = solde antérieur - loyer - charges + paiements (0)
+      // Si previousBalance est négatif (locataire doit), on ajoute le loyer à la dette
+      // Exemple: -20.10 - 485.22 - 42.00 = -547.32 (doit 547.32€)
+      totalToPay = previousBalance - rentAmount - chargesAmount;
     }
 
     // Fetch landlord details to get address

@@ -43,6 +43,8 @@ interface Lease {
   property: Property;
   tenant: Tenant;
   payments: Payment[];
+  currentRentAmount?: number; // Most recent rent after revisions
+  currentChargesAmount?: number; // Most recent charges after revisions
 }
 
 export default function LeasesPage() {
@@ -73,7 +75,45 @@ export default function LeasesPage() {
         throw new Error('Failed to fetch leases');
       }
       const leasesData = await leasesResponse.json();
-      setLeases(leasesData);
+
+      // Fetch current rent for each lease
+      const leasesWithCurrentRent = await Promise.all(
+        leasesData.map(async (lease: Lease) => {
+          try {
+            // Get current month
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            // Fetch rent history for current month
+            const rentHistoryResponse = await fetch(
+              `/api/leases/${lease.id}/rent-history?startMonth=${currentMonth}&endMonth=${currentMonth}`
+            );
+
+            if (rentHistoryResponse.ok) {
+              const rentHistory = await rentHistoryResponse.json();
+              if (rentHistory.length > 0) {
+                const currentRent = rentHistory[0];
+                return {
+                  ...lease,
+                  currentRentAmount: currentRent.rentAmount,
+                  currentChargesAmount: currentRent.chargesAmount,
+                };
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching rent history for lease ${lease.id}:`, error);
+          }
+
+          // Fallback to lease amounts if API fails
+          return {
+            ...lease,
+            currentRentAmount: lease.rentAmount,
+            currentChargesAmount: lease.chargesAmount,
+          };
+        })
+      );
+
+      setLeases(leasesWithCurrentRent);
 
       // Fetch properties
       const propsResponse = await fetch('/api/properties');
@@ -165,7 +205,10 @@ export default function LeasesPage() {
             <div className="space-y-4">
               {leases.map((lease) => {
                 const totalPaid = lease.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
-                const monthlyTotal = lease.rentAmount + lease.chargesAmount;
+                // Use current rent amounts (most recent after revisions)
+                const currentRent = lease.currentRentAmount || lease.rentAmount;
+                const currentCharges = lease.currentChargesAmount || lease.chargesAmount;
+                const monthlyTotal = currentRent + currentCharges;
                 const isActive = !lease.endDate;
                 const lastPayment = lease.payments?.[0];
 
@@ -208,7 +251,7 @@ export default function LeasesPage() {
                           €{monthlyTotal.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          (€{lease.rentAmount} + €{lease.chargesAmount} {t('charges')})
+                          (€{currentRent.toFixed(2)} + €{currentCharges.toFixed(2)} {t('charges')})
                         </p>
                       </div>
                       <div>
