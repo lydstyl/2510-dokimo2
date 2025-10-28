@@ -74,7 +74,7 @@ export class PdfReceiptGenerator {
     yPosition += 5;
 
     // Landlord section
-    yPosition = this.addLandlordSection(pdf, data.landlord, yPosition);
+    yPosition = this.addLandlordSection(pdf, data.landlord, data.receiptType, yPosition);
     yPosition += 5;
 
     // Tenant section
@@ -163,6 +163,7 @@ export class PdfReceiptGenerator {
   private addLandlordSection(
     pdf: jsPDF,
     landlord: ReceiptData['landlord'],
+    receiptType: ReceiptData['receiptType'],
     y: number
   ): number {
     y = this.addSectionHeader(pdf, 'BAILLEUR', y);
@@ -170,10 +171,13 @@ export class PdfReceiptGenerator {
     pdf.text(`Nom : ${landlord.name}`, this.MARGIN_LEFT, y);
     y += this.LINE_HEIGHT;
 
-    const landlordType =
-      landlord.type === 'NATURAL_PERSON' ? 'Personne physique' : 'Personne morale';
-    pdf.text(`Type : ${landlordType}`, this.MARGIN_LEFT, y);
-    y += this.LINE_HEIGHT;
+    // Only show Type for non-partial receipts
+    if (receiptType !== 'partial') {
+      const landlordType =
+        landlord.type === 'NATURAL_PERSON' ? 'Personne physique' : 'Personne morale';
+      pdf.text(`Type : ${landlordType}`, this.MARGIN_LEFT, y);
+      y += this.LINE_HEIGHT;
+    }
 
     pdf.text(`Adresse : ${landlord.address}`, this.MARGIN_LEFT, y);
     y += this.LINE_HEIGHT;
