@@ -12,12 +12,20 @@ interface Tenant {
   phone: string | null;
 }
 
+interface Landlord {
+  id: string;
+  name: string;
+  type: string;
+  managerName: string | null;
+}
+
 interface Property {
   id: string;
   name: string;
   address: string;
   postalCode: string;
   city: string;
+  landlord: Landlord;
 }
 
 interface Payment {
@@ -362,6 +370,95 @@ export default function LeasePaymentsPage() {
     }
   };
 
+  const handleDownloadPaymentNotice = async (monthOffset: number) => {
+    if (!lease) return;
+
+    // Calculate target month (0 = current month, 1 = next month)
+    const now = new Date();
+    const targetDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+    const targetMonth = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // Get month label in French
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const monthLabel = `${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
+
+    // Calculate previous balance (balance before target month)
+    let previousBalance = 0;
+    const targetMonthRow = monthlyRows.find(r => r.month === targetMonth);
+    if (targetMonthRow) {
+      previousBalance = targetMonthRow.balanceBefore;
+    } else {
+      // If target month not in rows, calculate from last available row
+      if (monthlyRows.length > 0) {
+        const lastRow = monthlyRows[monthlyRows.length - 1];
+        previousBalance = lastRow.balanceAfter;
+      }
+    }
+
+    // Prepare data for PDF generator
+    const noticeData = {
+      landlord: {
+        name: lease.property.landlord.name,
+        type: lease.property.landlord.type,
+        address: `${lease.property.landlord.id}`, // We'll need to fetch landlord address
+        email: undefined,
+        phone: undefined,
+      },
+      tenant: {
+        firstName: lease.tenant.firstName,
+        lastName: lease.tenant.lastName,
+        email: lease.tenant.email || undefined,
+        phone: lease.tenant.phone || undefined,
+      },
+      property: {
+        name: lease.property.name,
+        address: lease.property.address,
+        city: lease.property.city,
+        postalCode: lease.property.postalCode,
+      },
+      lease: {
+        rentAmount: lease.rentAmount,
+        chargesAmount: lease.chargesAmount,
+        paymentDueDay: lease.paymentDueDay,
+      },
+      notice: {
+        month: monthLabel,
+        issueDate: new Date(),
+        previousBalance: previousBalance,
+      },
+    };
+
+    // Fetch landlord details to get address
+    try {
+      const landlordResponse = await fetch(`/api/landlords/${lease.property.landlord.id}`);
+      if (landlordResponse.ok) {
+        const landlordData = await landlordResponse.json();
+        noticeData.landlord.address = landlordData.address || 'Non renseigné';
+        noticeData.landlord.email = landlordData.email || undefined;
+        noticeData.landlord.phone = landlordData.phone || undefined;
+      }
+    } catch (error) {
+      console.error('Error fetching landlord details:', error);
+      noticeData.landlord.address = 'Non renseigné';
+    }
+
+    // Dynamic import to avoid server-side issues
+    const { PdfPaymentNoticeGenerator } = await import('@/features/receipt/infrastructure/PdfPaymentNoticeGenerator');
+    const generator = new PdfPaymentNoticeGenerator();
+    const pdfBuffer = generator.generate(noticeData);
+
+    // Download PDF
+    const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `avis-echeance-${targetMonth}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleExportTxt = () => {
     if (!lease) return;
 
@@ -531,6 +628,15 @@ Document généré automatiquement par le système de gestion locative.
     let content = '';
     let filename = '';
 
+    // Get landlord name based on type (manager name for legal entities)
+    const getLandlordName = () => {
+      if (lease.property.landlord.type === 'LEGAL_ENTITY' && lease.property.landlord.managerName) {
+        return lease.property.landlord.managerName;
+      }
+      return lease.property.landlord.name;
+    };
+    const landlordName = getLandlordName();
+
     // Generate content based on receipt type
     if (receiptType === 'unpaid') {
       // AVIS DE LOYER IMPAYÉ
@@ -617,7 +723,7 @@ ${monthRow.payments.map(p =>
 `}
 ─────────────────────────────────────────────────────
 
-Je soussigné(e), bailleur du bien immobilier désigné
+Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste que le loyer pour la période du ${monthRow.monthLabel}\na été intégralement réglé par utilisation du crédit existant.` :
   `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
@@ -676,7 +782,7 @@ ${monthRow.payments.map(p =>
 `}
 ─────────────────────────────────────────────────────
 
-Je soussigné(e), bailleur du bien immobilier désigné
+Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste qu'un crédit de ${monthRow.balanceBefore.toFixed(2)} € a été imputé\nsur le loyer pour la période du ${monthRow.monthLabel}.` :
   `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
@@ -730,7 +836,7 @@ ${monthRow.payments.map(p =>
 
 ─────────────────────────────────────────────────────
 
-Je soussigné(e), bailleur du bien immobilier désigné
+Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
 ${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € pour
 la période du ${monthRow.monthLabel}.
@@ -825,7 +931,21 @@ prochain loyer ou remboursé selon accord entre les parties.
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold">{t('historyHeading')}</h3>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => handleDownloadPaymentNotice(0)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2"
+                title="Télécharger l'avis d'échéance du mois en cours"
+              >
+                📅 Avis mois actuel
+              </button>
+              <button
+                onClick={() => handleDownloadPaymentNotice(1)}
+                className="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 flex items-center gap-2"
+                title="Télécharger l'avis d'échéance du mois prochain"
+              >
+                📅 Avis mois prochain
+              </button>
               <button
                 onClick={handleExportTxt}
                 className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center gap-2"

@@ -4,7 +4,7 @@ import { getMessages } from 'next-intl/server';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Système de Gestion Locative',
+  title: '🏠 Dokimo',
   description: 'Gérer les biens immobiliers, les baux et les paiements',
 };
 
