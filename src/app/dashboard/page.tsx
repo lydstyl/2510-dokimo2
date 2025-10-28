@@ -40,6 +40,16 @@ export default async function DashboardPage() {
           <DashboardCard title={t('cards.leases.title')} description={t('cards.leases.description')} href="/dashboard/leases" />
         </div>
 
+        <div className="mb-8">
+          <a
+            href="/dashboard/quick-rent-overview"
+            className="block bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <h3 className="text-xl font-semibold mb-2">{t('cards.quickRent.title')}</h3>
+            <p className="text-blue-100">{t('cards.quickRent.description')}</p>
+          </a>
+        </div>
+
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">{t('welcome')}</h2>
           <p className="text-gray-600">

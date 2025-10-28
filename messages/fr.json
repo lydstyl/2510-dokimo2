@@ -41,7 +41,55 @@
       "payments": {
         "title": "Paiements",
         "description": "Gérer les paiements"
+      },
+      "quickRent": {
+        "title": "Point rapide des loyers",
+        "description": "Voir les loyers du mois en cours et générer les quittances"
       }
+    }
+  },
+  "quickRent": {
+    "title": "Point rapide des loyers",
+    "heading": "Loyers du mois en cours",
+    "currentMonth": "Mois en cours",
+    "emptyState": "Tous les loyers du mois sont à jour ! Aucun loyer impayé ou trop payé.",
+    "table": {
+      "property": "Bien",
+      "tenant": "Locataire",
+      "month": "Mois",
+      "rentDue": "Loyer dû",
+      "amountPaid": "Montant payé",
+      "balanceBefore": "Dû avant",
+      "balanceAfter": "Dû après",
+      "receiptType": "Type de reçu",
+      "actions": "Actions"
+    },
+    "receiptTypes": {
+      "full": "Quittance complète",
+      "partial": "Reçu partiel",
+      "overpayment": "Trop-perçu",
+      "unpaid": "Impayé"
+    },
+    "actions": {
+      "downloadTxt": "TXT",
+      "downloadPdf": "PDF",
+      "addPayment": "Ajouter paiement",
+      "editPayment": "Modifier paiement",
+      "deletePayment": "Supprimer paiement"
+    },
+    "modal": {
+      "addTitle": "Ajouter un paiement",
+      "editTitle": "Modifier le paiement",
+      "deleteTitle": "Supprimer le paiement",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce paiement ?",
+      "amount": "Montant (€)",
+      "date": "Date de paiement",
+      "notes": "Notes (optionnel)",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "saving": "Enregistrement...",
+      "deleting": "Suppression..."
     }
   },
   "landlords": {

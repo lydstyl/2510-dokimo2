@@ -4,4 +4,5 @@
 
 - feature calcul des nouvelles charges avec feature compteur d'eau, factures etc.
 
-- Dans la quittance Je soussigné(e), bailleur du bien immobilier désigné
+- Dans la quittance "Je soussigné(e), bailleur du bien immobilier désigné" je veux que le mot bailleur soit remplacé par le nom du bailleur et s'il s'agit d'une personne morale par le nom du gérant.
+- Dans le reçu partiel de loyer en .pdf, je ne veux pas voir le Type du genre "Type : Personne morale".
