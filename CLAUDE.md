@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## CRITICAL RULES
 
 ### Language Convention
+
 **🔴 MANDATORY: All code MUST be written in English, but the UI MUST be displayed in French.**
 
 - **Code** (variables, functions, classes, comments): ENGLISH ONLY
@@ -17,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Client components: `const t = useTranslations('namespace');`
 
 Example:
+
 ```typescript
 // ✅ CORRECT: English code, French UI via translation
 const calculateTotalRent = (lease: Lease) => {
@@ -31,7 +33,9 @@ const calculerLoyerTotal = (bail: Bail) => { ... }
 ```
 
 ### Testing Requirements
+
 **Tests are MANDATORY for domain and use-case layers only:**
+
 - ✅ Test: Domain entities (`src/domain/entities/`)
 - ✅ Test: Value objects (`src/domain/value-objects/`)
 - ✅ Test: Use cases (`src/use-cases/`)
@@ -42,12 +46,14 @@ const calculerLoyerTotal = (bail: Bail) => { ... }
 
 ## Architecture
 
-This project follows **Clean Architecture** with strict layer separation. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+This project follows **Clean Architecture** with strict layer separation. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed documentation.
 
 ### Current Structure (Transitioning)
+
 The codebase is currently organized by layer, but **should evolve to feature-based organization**:
 
 **Current (layer-based)**:
+
 ```
 src/
 ├── domain/              # All domain entities together
@@ -57,6 +63,7 @@ src/
 ```
 
 **Target (feature-based)**: Each feature contains its own Clean Architecture layers:
+
 ```
 src/
 ├── features/
@@ -79,6 +86,7 @@ src/
 **When adding new features**: Use the feature-based structure with `domain/`, `application/`, `infrastructure/`, and `presentation/` folders inside each feature folder.
 
 ### Dependency Rule (CRITICAL)
+
 **Dependencies always point inward**: `presentation → application → domain`
 
 - **Domain layer**: ZERO external dependencies (pure TypeScript)
@@ -91,20 +99,25 @@ src/
 **1. Repository Pattern**: Use cases depend on interfaces (`ILeaseRepository`), infrastructure provides implementations (`PrismaLeaseRepository`). This allows swapping databases without changing business logic.
 
 **2. Factory Pattern**: Entities are created via static factory methods:
+
 ```typescript
-const money = Money.create(1000);
-const lease = Lease.create({ /* props */ });
+const money = Money.create(1000)
+const lease = Lease.create({
+  /* props */
+})
 ```
 
 **3. Value Objects**: Immutable objects for domain concepts:
+
 ```typescript
-const rent = Money.create(1000);
-const total = rent.add(Money.create(100)); // Returns new Money(1100)
+const rent = Money.create(1000)
+const total = rent.add(Money.create(100)) // Returns new Money(1100)
 ```
 
 **4. Domain Validation**: Entities validate themselves on creation:
+
 ```typescript
-Money.create(-100); // Throws error: "Money amount cannot be negative"
+Money.create(-100) // Throws error: "Money amount cannot be negative"
 ```
 
 ## Working with the Codebase
@@ -114,6 +127,7 @@ Money.create(-100); // Throws error: "Money amount cannot be negative"
 **Always follow TDD for domain/application layers. Use feature folders for new code.**
 
 1. **Create feature folder structure**:
+
    ```
    src/features/my-feature/
    ├── domain/
@@ -132,21 +146,25 @@ Money.create(-100); // Throws error: "Money amount cannot be negative"
    ```
 
 2. **Start with domain (TDD)**:
+
    - Write tests in `domain/__tests__/`
    - Create entity with validation and business logic
    - Entities MUST be immutable and self-validating
    - Use English for all code
 
 3. **Define repository interface**:
+
    - Create in `application/interfaces/IMyRepository.ts`
    - Define contract (methods needed by use cases)
 
 4. **Create use case (TDD)**:
+
    - Write tests in `application/__tests__/` with mocked repository
    - Implement use case depending ONLY on repository interface
    - Use English for all code, French only in UI translations
 
 5. **Implement infrastructure**:
+
    - Create Prisma repository in `infrastructure/`
    - Implement interface methods
    - Convert between Prisma models (Float, Date) and domain entities (Money, etc.)
@@ -159,16 +177,19 @@ Money.create(-100); // Throws error: "Money amount cannot be negative"
 ### Important Domain Entities
 
 **Lease**: Central entity linking Property and Tenant
+
 - Contains rent and charges amounts (as Money value objects)
 - Has `paymentDueDay` (1-31) for payment scheduling
 - Methods: `totalAmount`, `isActive()`, `getExpectedPaymentDate()`
 
 **Payment**: Records rent payments
+
 - Links to Lease
 - Has `paymentDate`, `periodStart`, `periodEnd`
 - Type can be "FULL" or "PARTIAL"
 
 **Money**: Value object for all monetary amounts
+
 - Validates non-negative amounts
 - Operations: `add()`, `subtract()`, `multiply()`, `isGreaterThan()`, etc.
 - Always use Money, never raw numbers in domain logic
@@ -176,12 +197,14 @@ Money.create(-100); // Throws error: "Money amount cannot be negative"
 ### Testing Strategy
 
 **MANDATORY: Test domain and application layers ONLY**
+
 - ✅ Domain entities: Validation, business rules, calculations
 - ✅ Application (use cases): Mock repositories, test workflows
 - ❌ Infrastructure: Don't test Prisma repositories
 - ❌ Presentation: Don't test API routes/pages
 
 **TDD Workflow**:
+
 ```bash
 # 1. Write failing test
 npm test -- --watch MyEntity.test.ts
@@ -194,6 +217,7 @@ npm test -- --watch MyEntity.test.ts
 ```
 
 Run tests:
+
 ```bash
 npm test                       # All tests
 npm test -- --watch            # Watch mode
@@ -204,22 +228,25 @@ npm test -- --grep "Money"     # Pattern matching
 ### Authentication
 
 Simple JWT-based authentication:
+
 - Single user credentials in `.env`: `AUTH_EMAIL`, `AUTH_PASSWORD`
 - Password hashed with bcrypt (see `src/infrastructure/auth/credentials.ts`)
 - Sessions use JWT tokens with 24h expiration
 - Session cookie: `httpOnly`, `sameSite: lax`
 
 **Protecting routes**: All API routes should start with:
+
 ```typescript
-const session = await getSession();
+const session = await getSession()
 if (!session) {
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 ```
 
 ### Internationalization (i18n)
 
 **UI is in French using next-intl**:
+
 - Translations: `messages/fr.json`
 - Server components: `const t = await getTranslations('namespace');`
 - Client components: `const t = useTranslations('namespace');`
@@ -228,11 +255,13 @@ if (!session) {
 ### Database
 
 **After schema changes**:
+
 ```bash
 npm run prisma:generate && npm run prisma:migrate
 ```
 
 Schema notes:
+
 - All IDs use `cuid()`
 - All models have `createdAt`/`updatedAt`
 - See `prisma/schema.prisma` for full schema
@@ -246,26 +275,32 @@ Schema notes:
 ### Common Pitfalls (AVOID THESE)
 
 1. **🚫 French in code**: Code must be in English, only UI in French
+
    - ❌ `const calculerLoyer = () => {}`
    - ✅ `const calculateRent = () => {}`
 
 2. **🚫 Framework dependencies in domain**: Domain = pure TypeScript only
+
    - ❌ `import { prisma } from '@/infrastructure/database'` in domain
    - ✅ No imports except other domain files
 
 3. **🚫 Raw numbers for money**: Always use Money value object
+
    - ❌ `const total = rent + charges;`
    - ✅ `const total = rent.add(charges);`
 
 4. **🚫 Validation outside domain**: Entities validate themselves
+
    - ❌ Validation in use case or API route
    - ✅ Validation in entity constructor
 
 5. **🚫 Mutable entities**: Domain entities are immutable
+
    - ❌ `lease.rentAmount = newAmount;`
    - ✅ `const updatedLease = Lease.create({ ...lease, rentAmount });`
 
 6. **🚫 Missing tests for domain/application**: Tests are mandatory
+
    - ❌ Creating entity without tests
    - ✅ TDD: test first, then implement
 
@@ -276,6 +311,7 @@ Schema notes:
 ## Project-Specific Conventions
 
 **Code Style**:
+
 - Language: English for code, French for UI
 - Entity factory: `Entity.create({ ... })`
 - Repository methods: `findById`, `findByPropertyId`, `create`, `update`, `delete`
@@ -283,11 +319,13 @@ Schema notes:
 - Test location: `__tests__/` folder next to implementation
 
 **Domain Rules**:
+
 - Monetary amounts: Always use `Money.create()`, never raw numbers
 - Immutability: All domain entities are immutable
 - Validation: In entity constructors, not in use cases
 
 **API Conventions**:
+
 - Authentication: Check `getSession()` on all protected routes
 - Response format: Serialize domain entities (Money → number, Date → ISO string)
 - Error handling: Return appropriate HTTP status codes
@@ -295,6 +333,7 @@ Schema notes:
 ## Quick Reference
 
 **Create a new feature**:
+
 ```bash
 # 1. Create feature structure
 mkdir -p src/features/my-feature/{domain,application,infrastructure,presentation}
@@ -308,6 +347,7 @@ mkdir -p src/features/my-feature/{domain,application,infrastructure,presentation
 ```
 
 **Add French translation**:
+
 ```json
 // messages/fr.json
 {
@@ -319,6 +359,7 @@ mkdir -p src/features/my-feature/{domain,application,infrastructure,presentation
 ```
 
 **Run tests before commit**:
+
 ```bash
 npm test && npm run lint
 ```
@@ -361,6 +402,7 @@ src/features/lease/
 ```
 
 **Key points**:
+
 - Each feature is self-contained
 - Clear separation between layers
 - Tests live next to implementation
