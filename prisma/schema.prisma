@@ -54,6 +54,7 @@ model Property {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   leases      Lease[]
+  boilers     Boiler[]
 
   @@index([landlordId])
 }
@@ -121,4 +122,32 @@ model RentRevision {
 
   @@index([leaseId])
   @@index([effectiveDate])
+}
+
+// Boiler - heating system linked to a property
+model Boiler {
+  id               String              @id @default(cuid())
+  propertyId       String
+  property         Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name             String?             // optional name for the boiler
+  notes            String?             // optional notes about the boiler
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  maintenances     BoilerMaintenance[]
+
+  @@index([propertyId])
+}
+
+// BoilerMaintenance - maintenance record for a boiler
+model BoilerMaintenance {
+  id               String   @id @default(cuid())
+  boilerId         String
+  boiler           Boiler   @relation(fields: [boilerId], references: [id], onDelete: Cascade)
+  maintenanceDate  DateTime
+  documentPath     String?  // optional path to PDF or image file
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([boilerId])
+  @@index([maintenanceDate])
 }

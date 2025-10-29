@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { BoilerStatus } from './components/BoilerStatus';
 
 type PropertyType = 'APARTMENT' | 'HOUSE' | 'GARAGE' | 'PARKING' | 'COMMERCIAL' | 'OTHER';
 
@@ -212,6 +213,7 @@ export default function PropertiesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.type')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.address')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.landlord')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chaudières</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
@@ -232,6 +234,9 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{property.landlord.name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <BoilerStatus propertyId={property.id} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button

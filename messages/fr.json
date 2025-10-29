@@ -45,6 +45,10 @@
       "quickRent": {
         "title": "Point rapide des loyers",
         "description": "Voir les loyers du mois en cours et générer les quittances"
+      },
+      "boilers": {
+        "title": "Chaudières",
+        "description": "Gérer les chaudières et leurs entretiens"
       }
     }
   },
@@ -309,5 +313,61 @@
     "save": "Enregistrer",
     "loading": "Chargement...",
     "currency": "€"
+  },
+  "boilers": {
+    "title": "Chaudières",
+    "heading": "Gestion des Chaudières",
+    "addBoiler": "Ajouter une chaudière",
+    "addMaintenance": "Entretien",
+    "viewAll": "Voir toutes les chaudières",
+    "exportForPlumber": "Exporter pour le plombier",
+    "emptyState": "Aucune chaudière dans ce bien.",
+    "noBoilers": "Aucune chaudière enregistrée.",
+    "table": {
+      "property": "Bien",
+      "boiler": "Chaudière",
+      "lastMaintenance": "Dernier entretien",
+      "nextMaintenance": "Prochain entretien",
+      "tenant": "Locataire",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "ok": "OK",
+      "overdue": "En retard",
+      "noMaintenance": "Aucun entretien"
+    },
+    "maintenanceStatus": {
+      "monthsSince": "{months} mois",
+      "overdue": "Plus de 11 mois !",
+      "never": "Jamais entretenu"
+    },
+    "modal": {
+      "addBoilerTitle": "Ajouter une chaudière",
+      "editBoilerTitle": "Modifier la chaudière",
+      "deleteBoilerTitle": "Supprimer la chaudière",
+      "deleteBoilerMessage": "Êtes-vous sûr de vouloir supprimer cette chaudière ? Tous les entretiens associés seront également supprimés.",
+      "addMaintenanceTitle": "Enregistrer un entretien",
+      "name": "Nom de la chaudière (optionnel)",
+      "namePlaceholder": "Ex: Chaudière principale",
+      "notes": "Notes (optionnel)",
+      "notesPlaceholder": "Ex: Située dans la cave",
+      "maintenanceDate": "Date de l'entretien",
+      "document": "Justificatif (PDF ou image)",
+      "selectFile": "Choisir un fichier",
+      "noFileSelected": "Aucun fichier sélectionné",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "saving": "Enregistrement...",
+      "deleting": "Suppression...",
+      "uploading": "Téléchargement..."
+    },
+    "overview": {
+      "title": "Vue d'ensemble des chaudières",
+      "heading": "Toutes les chaudières",
+      "export": "Exporter pour le plombier",
+      "emptyState": "Aucune chaudière enregistrée dans le système."
+    }
   }
 }
