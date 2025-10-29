@@ -39,8 +39,13 @@ export default async function DashboardPage() {
           <DashboardCard title={t('cards.tenants.title')} description={t('cards.tenants.description')} href="/dashboard/tenants" />
           <DashboardCard title={t('cards.leases.title')} description={t('cards.leases.description')} href="/dashboard/leases" />
           <DashboardCard title={t('cards.boilers.title')} description={t('cards.boilers.description')} href="/dashboard/boilers" />
+          <DashboardCard title="Assurances" description="Gérer les attestations d'assurance" href="/dashboard/insurance" />
+          <DashboardCard title="Compteurs d'eau" description="Suivre les relevés de compteurs" href="/dashboard/water-meters" />
+          <DashboardCard title="Diagnostics" description="Gérer les diagnostics immobiliers" href="/dashboard/diagnostics" />
+          <DashboardCard title="États des lieux" description="Tous les états des lieux" href="/dashboard/inventories" />
+          <DashboardCard title="Publications" description="Annonces de mise en location" href="/dashboard/listings" />
           <DashboardCard title="Immeubles" description="Gérer les immeubles et les charges" href="/dashboard/buildings" />
-          <DashboardCard title="États des lieux" description="Templates et états des lieux" href="/dashboard/inventory-templates" />
+          <DashboardCard title="Templates" description="Templates d'états des lieux" href="/dashboard/inventory-templates" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
