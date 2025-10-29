@@ -28,6 +28,7 @@ export class PrismaTenantRepository implements ITenantRepository {
     const created = await this.prisma.tenant.create({
       data: {
         id: tenant.id,
+        civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
@@ -42,6 +43,7 @@ export class PrismaTenantRepository implements ITenantRepository {
     const updated = await this.prisma.tenant.update({
       where: { id: tenant.id },
       data: {
+        civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
@@ -61,6 +63,7 @@ export class PrismaTenantRepository implements ITenantRepository {
   private toDomain(raw: any): Tenant {
     return Tenant.create({
       id: raw.id,
+      civility: raw.civility,
       firstName: raw.firstName,
       lastName: raw.lastName,
       email: raw.email ? Email.create(raw.email) : undefined,

@@ -4,6 +4,7 @@ import { ITenantRepository } from './interfaces/ITenantRepository';
 
 export interface UpdateTenantInput {
   id: string;
+  civility?: string;
   firstName: string;
   lastName: string;
   email?: string;
@@ -22,6 +23,7 @@ export class UpdateTenant {
 
     const updatedTenant = Tenant.create({
       id: input.id,
+      civility: input.civility,
       firstName: input.firstName,
       lastName: input.lastName,
       email: input.email ? Email.create(input.email) : undefined,

@@ -61,6 +61,7 @@ model Property {
 // Tenant
 model Tenant {
   id        String   @id @default(cuid())
+  civility  String?  // "M." or "Mme" (Monsieur or Madame)
   firstName String
   lastName  String
   email     String?

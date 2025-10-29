@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 interface Tenant {
   id: string;
+  civility?: string;
   firstName: string;
   lastName: string;
   email?: string;
@@ -22,6 +23,7 @@ interface TenantModalProps {
 export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantModalProps) {
   const t = useTranslations('tenants.modal');
   const [formData, setFormData] = useState({
+    civility: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -33,6 +35,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
   useEffect(() => {
     if (tenant && mode === 'edit') {
       setFormData({
+        civility: tenant.civility || '',
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email || '',
@@ -40,6 +43,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
       });
     } else if (mode === 'add') {
       setFormData({
+        civility: '',
         firstName: '',
         lastName: '',
         email: '',
@@ -73,6 +77,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            civility: formData.civility || undefined,
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email || undefined,
@@ -91,6 +96,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            civility: formData.civility || undefined,
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email || undefined,
@@ -158,6 +164,21 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('civility')}
+              </label>
+              <select
+                value={formData.civility}
+                onChange={(e) => setFormData({ ...formData, civility: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{t('selectCivility')}</option>
+                <option value="M.">M.</option>
+                <option value="Mme">Mme</option>
+              </select>
+            </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('firstName')} *

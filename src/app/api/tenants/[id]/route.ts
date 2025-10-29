@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { firstName, lastName, email, phone } = body;
+    const { civility, firstName, lastName, email, phone } = body;
 
     if (!firstName || !lastName) {
       return NextResponse.json(
@@ -31,6 +31,7 @@ export async function PATCH(
 
     const tenant = await useCase.execute({
       id,
+      civility,
       firstName,
       lastName,
       email,
@@ -39,6 +40,7 @@ export async function PATCH(
 
     return NextResponse.json({
       id: tenant.id,
+      civility: tenant.civility,
       firstName: tenant.firstName,
       lastName: tenant.lastName,
       email: tenant.email?.getValue(),

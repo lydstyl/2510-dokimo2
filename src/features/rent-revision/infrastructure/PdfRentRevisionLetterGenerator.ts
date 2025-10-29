@@ -7,6 +7,7 @@ export interface RentRevisionLetterData {
     managerName?: string;
   };
   tenant: {
+    civility?: string;
     firstName: string;
     lastName: string;
   };
@@ -201,7 +202,10 @@ export class PdfRentRevisionLetterGenerator {
     y += lines6.length * this.LINE_HEIGHT + 3;
 
     // Closing
-    const closing = `Je vous prie de bien vouloir agréer, ${data.tenant.firstName} ${data.tenant.lastName}, l'expression de mes sentiments cordiaux.`;
+    const tenantName = data.tenant.civility
+      ? `${data.tenant.civility} ${data.tenant.firstName} ${data.tenant.lastName}`
+      : `${data.tenant.firstName} ${data.tenant.lastName}`;
+    const closing = `Je vous prie de bien vouloir agréer, ${tenantName}, l'expression de mes sentiments cordiaux.`;
     const linesClosing = pdf.splitTextToSize(closing, this.CONTENT_WIDTH);
     pdf.text(linesClosing, this.MARGIN_LEFT, y);
     y += linesClosing.length * this.LINE_HEIGHT + 8;

@@ -162,6 +162,8 @@
       "editTitle": "Modifier le locataire",
       "deleteTitle": "Supprimer le locataire",
       "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce locataire ? Cette action est irréversible.",
+      "civility": "Civilité (optionnel)",
+      "selectCivility": "-- Sélectionnez --",
       "firstName": "Prénom",
       "lastName": "Nom",
       "email": "Email (optionnel)",

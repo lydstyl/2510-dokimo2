@@ -21,6 +21,7 @@ interface Lease {
     };
   };
   tenant: {
+    civility?: string;
     firstName: string;
     lastName: string;
   };
@@ -122,7 +123,7 @@ En ajoutant vos charges actuelles (${currentCharges.toFixed(2)} €) nous obteno
 
 Je vous remercie de bien vouloir appliquer cette augmentation lors du règlement de votre loyer de ${effectiveMonth}.
 
-Je vous prie de bien vouloir agréer, ${lease.tenant.firstName} ${lease.tenant.lastName}, l'expression de mes sentiments cordiaux.
+Je vous prie de bien vouloir agréer, ${lease.tenant.civility ? `${lease.tenant.civility} ${lease.tenant.firstName} ${lease.tenant.lastName}` : `${lease.tenant.firstName} ${lease.tenant.lastName}`}, l'expression de mes sentiments cordiaux.
 
 
 ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${lease.property.landlord.name}` : ''}`;

@@ -2,6 +2,7 @@ import { Email } from '../value-objects/Email';
 
 export interface TenantProps {
   id: string;
+  civility?: string;
   firstName: string;
   lastName: string;
   email?: Email;
@@ -32,6 +33,10 @@ export class Tenant {
     return this.props.id;
   }
 
+  get civility(): string | undefined {
+    return this.props.civility;
+  }
+
   get firstName(): string {
     return this.props.firstName;
   }
@@ -42,6 +47,13 @@ export class Tenant {
 
   get fullName(): string {
     return `${this.props.firstName} ${this.props.lastName}`;
+  }
+
+  get fullNameWithCivility(): string {
+    if (this.props.civility) {
+      return `${this.props.civility} ${this.props.firstName} ${this.props.lastName}`;
+    }
+    return this.fullName;
   }
 
   get email(): Email | undefined {

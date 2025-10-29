@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       tenants.map(tenant => ({
         id: tenant.id,
+        civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { firstName, lastName, email, phone } = body;
+    const { civility, firstName, lastName, email, phone } = body;
 
     if (!firstName || !lastName) {
       return NextResponse.json(
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     const useCase = new CreateTenant(repository);
 
     const tenant = await useCase.execute({
+      civility,
       firstName,
       lastName,
       email,
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         id: tenant.id,
+        civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
