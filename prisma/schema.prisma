@@ -43,18 +43,19 @@ model Landlord {
 
 // Property (apartment, house, garage, etc.)
 model Property {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // "APARTMENT", "HOUSE", "GARAGE", etc.
-  address     String
-  postalCode  String
-  city        String
-  landlordId  String
-  landlord    Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  leases      Lease[]
-  boilers     Boiler[]
+  id                    String                 @id @default(cuid())
+  name                  String
+  type                  String                 // "APARTMENT", "HOUSE", "GARAGE", etc.
+  address               String
+  postalCode            String
+  city                  String
+  landlordId            String
+  landlord              Landlord               @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  leases                Lease[]
+  boilers               Boiler[]
+  insuranceCertificates InsuranceCertificate[]
 
   @@index([landlordId])
 }
@@ -150,4 +151,20 @@ model BoilerMaintenance {
 
   @@index([boilerId])
   @@index([maintenanceDate])
+}
+
+// InsuranceCertificate - home insurance certificate for a property
+model InsuranceCertificate {
+  id           String   @id @default(cuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  startDate    DateTime
+  endDate      DateTime? // optional end date
+  documentPath String?   // optional path to PDF or image file
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([startDate])
+  @@index([endDate])
 }
