@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 
+interface Maintenance {
+  id: string;
+  maintenanceDate: string;
+  documentPath: string | null;
+}
+
 interface BoilerWithMaintenance {
   boiler: {
     id: string;
@@ -27,8 +33,12 @@ export function BoilerStatus({ propertyId }: Props) {
   const [boilers, setBoilers] = useState<BoilerWithMaintenance[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddBoilerModal, setShowAddBoilerModal] = useState(false);
+  const [showEditBoilerModal, setShowEditBoilerModal] = useState(false);
+  const [showDeleteBoilerModal, setShowDeleteBoilerModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [selectedBoilerId, setSelectedBoilerId] = useState<string | null>(null);
+  const [showMaintenanceHistory, setShowMaintenanceHistory] = useState(false);
+  const [selectedBoiler, setSelectedBoiler] = useState<BoilerWithMaintenance | null>(null);
+  const [maintenanceHistory, setMaintenanceHistory] = useState<Maintenance[]>([]);
   const [boilerFormData, setBoilerFormData] = useState({ name: '', notes: '' });
   const [maintenanceFormData, setMaintenanceFormData] = useState({
     maintenanceDate: new Date().toISOString().split('T')[0],
@@ -50,6 +60,18 @@ export function BoilerStatus({ propertyId }: Props) {
       console.error('Error fetching boilers:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMaintenanceHistory = async (boilerId: string) => {
+    try {
+      const response = await fetch(`/api/boilers/maintenance?boilerId=${boilerId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMaintenanceHistory(data);
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance history:', error);
     }
   };
 
@@ -75,13 +97,54 @@ export function BoilerStatus({ propertyId }: Props) {
     }
   };
 
+  const handleEditBoiler = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBoiler) return;
+
+    try {
+      const response = await fetch(`/api/boilers/${selectedBoiler.boiler.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: boilerFormData.name || undefined,
+          notes: boilerFormData.notes || undefined,
+        }),
+      });
+      if (response.ok) {
+        await fetchBoilers();
+        setShowEditBoilerModal(false);
+        setSelectedBoiler(null);
+        setBoilerFormData({ name: '', notes: '' });
+      }
+    } catch (error) {
+      console.error('Error updating boiler:', error);
+    }
+  };
+
+  const handleDeleteBoiler = async () => {
+    if (!selectedBoiler) return;
+
+    try {
+      const response = await fetch(`/api/boilers/${selectedBoiler.boiler.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        await fetchBoilers();
+        setShowDeleteBoilerModal(false);
+        setSelectedBoiler(null);
+      }
+    } catch (error) {
+      console.error('Error deleting boiler:', error);
+    }
+  };
+
   const handleAddMaintenance = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBoilerId) return;
+    if (!selectedBoiler) return;
 
     try {
       const formData = new FormData();
-      formData.append('boilerId', selectedBoilerId);
+      formData.append('boilerId', selectedBoiler.boiler.id);
       formData.append('maintenanceDate', maintenanceFormData.maintenanceDate);
       if (maintenanceFormData.document) {
         formData.append('document', maintenanceFormData.document);
@@ -95,7 +158,7 @@ export function BoilerStatus({ propertyId }: Props) {
       if (response.ok) {
         await fetchBoilers();
         setShowMaintenanceModal(false);
-        setSelectedBoilerId(null);
+        setSelectedBoiler(null);
         setMaintenanceFormData({
           maintenanceDate: new Date().toISOString().split('T')[0],
           document: null,
@@ -104,6 +167,49 @@ export function BoilerStatus({ propertyId }: Props) {
     } catch (error) {
       console.error('Error adding maintenance:', error);
     }
+  };
+
+  const handleDeleteMaintenance = async (maintenanceId: string) => {
+    if (!confirm(t('modal.deleteMaintenanceMessage'))) return;
+
+    try {
+      const response = await fetch(`/api/boilers/maintenance/${maintenanceId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        await fetchBoilers();
+        if (selectedBoiler) {
+          await fetchMaintenanceHistory(selectedBoiler.boiler.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting maintenance:', error);
+    }
+  };
+
+  const openEditBoilerModal = (boiler: BoilerWithMaintenance) => {
+    setSelectedBoiler(boiler);
+    setBoilerFormData({
+      name: boiler.boiler.name || '',
+      notes: boiler.boiler.notes || '',
+    });
+    setShowEditBoilerModal(true);
+  };
+
+  const openDeleteBoilerModal = (boiler: BoilerWithMaintenance) => {
+    setSelectedBoiler(boiler);
+    setShowDeleteBoilerModal(true);
+  };
+
+  const openMaintenanceModal = (boiler: BoilerWithMaintenance) => {
+    setSelectedBoiler(boiler);
+    setShowMaintenanceModal(true);
+  };
+
+  const openMaintenanceHistory = async (boiler: BoilerWithMaintenance) => {
+    setSelectedBoiler(boiler);
+    await fetchMaintenanceHistory(boiler.boiler.id);
+    setShowMaintenanceHistory(true);
   };
 
   if (loading) {
@@ -121,7 +227,8 @@ export function BoilerStatus({ propertyId }: Props) {
           + Ajouter
         </button>
         {showAddBoilerModal && (
-          <AddBoilerModal
+          <BoilerFormModal
+            title={t('modal.addBoilerTitle')}
             onClose={() => setShowAddBoilerModal(false)}
             onSubmit={handleAddBoiler}
             formData={boilerFormData}
@@ -139,32 +246,55 @@ export function BoilerStatus({ propertyId }: Props) {
         const months = item.latestMaintenance?.monthsSinceLastMaintenance;
 
         return (
-          <div key={item.boiler.id} className="mb-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{item.boiler.name || 'Chaudière'}</span>
-              {item.latestMaintenance ? (
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    isOverdue
-                      ? 'bg-red-100 text-red-800 font-semibold'
-                      : 'bg-green-100 text-green-800'
-                  }`}
+          <div key={item.boiler.id} className="mb-3 text-sm border-b pb-2 last:border-b-0 last:pb-0">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex-1">
+                <span className="font-medium">{item.boiler.name || 'Chaudière'}</span>
+                {item.latestMaintenance ? (
+                  <span
+                    className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                      isOverdue
+                        ? 'bg-red-100 text-red-800 font-semibold'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {isOverdue ? `⚠️ ${months} mois` : `✓ ${months} mois`}
+                  </span>
+                ) : (
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                    Jamais entretenu
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => openEditBoilerModal(item)}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                  title={t('modal.edit')}
                 >
-                  {isOverdue ? `⚠️ ${months} mois` : `✓ ${months} mois`}
-                </span>
-              ) : (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
-                  Jamais entretenu
-                </span>
-              )}
+                  ✏️
+                </button>
+                <button
+                  onClick={() => openDeleteBoilerModal(item)}
+                  className="text-xs text-red-600 hover:text-red-800"
+                  title={t('modal.delete')}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-2 text-xs">
               <button
-                onClick={() => {
-                  setSelectedBoilerId(item.boiler.id);
-                  setShowMaintenanceModal(true);
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                onClick={() => openMaintenanceModal(item)}
+                className="text-blue-600 hover:text-blue-800"
               >
-                {t('addMaintenance')}
+                + {t('addMaintenance')}
+              </button>
+              <button
+                onClick={() => openMaintenanceHistory(item)}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                📋 {t('modal.viewHistory')}
               </button>
             </div>
           </div>
@@ -177,8 +307,10 @@ export function BoilerStatus({ propertyId }: Props) {
         + Ajouter une chaudière
       </button>
 
+      {/* Modals */}
       {showAddBoilerModal && (
-        <AddBoilerModal
+        <BoilerFormModal
+          title={t('modal.addBoilerTitle')}
           onClose={() => setShowAddBoilerModal(false)}
           onSubmit={handleAddBoiler}
           formData={boilerFormData}
@@ -186,27 +318,70 @@ export function BoilerStatus({ propertyId }: Props) {
         />
       )}
 
+      {showEditBoilerModal && (
+        <BoilerFormModal
+          title={t('modal.editBoilerTitle')}
+          onClose={() => {
+            setShowEditBoilerModal(false);
+            setSelectedBoiler(null);
+            setBoilerFormData({ name: '', notes: '' });
+          }}
+          onSubmit={handleEditBoiler}
+          formData={boilerFormData}
+          setFormData={setBoilerFormData}
+        />
+      )}
+
+      {showDeleteBoilerModal && selectedBoiler && (
+        <ConfirmDeleteModal
+          title={t('modal.deleteBoilerTitle')}
+          message={t('modal.deleteBoilerMessage')}
+          itemName={selectedBoiler.boiler.name || 'cette chaudière'}
+          onClose={() => {
+            setShowDeleteBoilerModal(false);
+            setSelectedBoiler(null);
+          }}
+          onConfirm={handleDeleteBoiler}
+        />
+      )}
+
       {showMaintenanceModal && (
-        <MaintenanceModal
+        <MaintenanceFormModal
           onClose={() => {
             setShowMaintenanceModal(false);
-            setSelectedBoilerId(null);
+            setSelectedBoiler(null);
           }}
           onSubmit={handleAddMaintenance}
           formData={maintenanceFormData}
           setFormData={setMaintenanceFormData}
         />
       )}
+
+      {showMaintenanceHistory && selectedBoiler && (
+        <MaintenanceHistoryModal
+          boilerName={selectedBoiler.boiler.name || 'Chaudière'}
+          maintenances={maintenanceHistory}
+          onClose={() => {
+            setShowMaintenanceHistory(false);
+            setSelectedBoiler(null);
+            setMaintenanceHistory([]);
+          }}
+          onDelete={handleDeleteMaintenance}
+        />
+      )}
     </div>
   );
 }
 
-function AddBoilerModal({
+// Boiler Form Modal (Add/Edit)
+function BoilerFormModal({
+  title,
   onClose,
   onSubmit,
   formData,
   setFormData,
 }: {
+  title: string;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   formData: { name: string; notes: string };
@@ -218,7 +393,7 @@ function AddBoilerModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="p-6">
-          <h3 className="text-xl font-semibold mb-4">{t('addBoilerTitle')}</h3>
+          <h3 className="text-xl font-semibold mb-4">{title}</h3>
           <form onSubmit={onSubmit}>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -266,7 +441,55 @@ function AddBoilerModal({
   );
 }
 
-function MaintenanceModal({
+// Confirm Delete Modal
+function ConfirmDeleteModal({
+  title,
+  message,
+  itemName,
+  onClose,
+  onConfirm,
+}: {
+  title: string;
+  message: string;
+  itemName: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations('boilers.modal');
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <h3 className="text-xl font-semibold mb-4 text-red-600">{title}</h3>
+          <p className="text-gray-700 mb-2">
+            {message}
+          </p>
+          <p className="text-sm text-gray-600 mb-6">
+            <strong>{itemName}</strong>
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              {t('delete')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Maintenance Form Modal
+function MaintenanceFormModal({
   onClose,
   onSubmit,
   formData,
@@ -329,6 +552,75 @@ function MaintenanceModal({
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Maintenance History Modal
+function MaintenanceHistoryModal({
+  boilerName,
+  maintenances,
+  onClose,
+  onDelete,
+}: {
+  boilerName: string;
+  maintenances: Maintenance[];
+  onClose: () => void;
+  onDelete: (id: string) => void;
+}) {
+  const t = useTranslations('boilers.modal');
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="p-6">
+          <h3 className="text-xl font-semibold mb-4">
+            {t('viewMaintenanceTitle')} - {boilerName}
+          </h3>
+          {maintenances.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">{t('noMaintenanceHistory')}</p>
+          ) : (
+            <div className="space-y-3">
+              {maintenances.map((maintenance) => (
+                <div
+                  key={maintenance.id}
+                  className="border rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div>
+                    <div className="font-medium">
+                      {new Date(maintenance.maintenanceDate).toLocaleDateString('fr-FR')}
+                    </div>
+                    {maintenance.documentPath && (
+                      <a
+                        href={maintenance.documentPath}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        📎 {t('downloadDocument')}
+                      </a>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onDelete(maintenance.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    🗑️ {t('delete')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
     </div>

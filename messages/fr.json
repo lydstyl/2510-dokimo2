@@ -346,8 +346,11 @@
       "addBoilerTitle": "Ajouter une chaudière",
       "editBoilerTitle": "Modifier la chaudière",
       "deleteBoilerTitle": "Supprimer la chaudière",
-      "deleteBoilerMessage": "Êtes-vous sûr de vouloir supprimer cette chaudière ? Tous les entretiens associés seront également supprimés.",
+      "deleteBoilerMessage": "Êtes-vous sûr de vouloir supprimer cette chaudière ? Tous les entretiens associés seront également supprimés. Les documents uploadés seront conservés.",
+      "deleteMaintenanceTitle": "Supprimer l'entretien",
+      "deleteMaintenanceMessage": "Êtes-vous sûr de vouloir supprimer cet entretien ? Le document uploadé sera conservé.",
       "addMaintenanceTitle": "Enregistrer un entretien",
+      "viewMaintenanceTitle": "Historique des entretiens",
       "name": "Nom de la chaudière (optionnel)",
       "namePlaceholder": "Ex: Chaudière principale",
       "notes": "Notes (optionnel)",
@@ -361,7 +364,11 @@
       "delete": "Supprimer",
       "saving": "Enregistrement...",
       "deleting": "Suppression...",
-      "uploading": "Téléchargement..."
+      "uploading": "Téléchargement...",
+      "edit": "Modifier",
+      "viewHistory": "Voir l'historique",
+      "noMaintenanceHistory": "Aucun entretien enregistré",
+      "downloadDocument": "Télécharger le document"
     },
     "overview": {
       "title": "Vue d'ensemble des chaudières",
