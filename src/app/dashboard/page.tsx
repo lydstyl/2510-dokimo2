@@ -43,13 +43,25 @@ export default async function DashboardPage() {
           <DashboardCard title="États des lieux" description="Templates et états des lieux" href="/dashboard/inventory-templates" />
         </div>
 
-        <div className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <a
             href="/dashboard/quick-rent-overview"
             className="block bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
           >
             <h3 className="text-xl font-semibold mb-2">{t('cards.quickRent.title')}</h3>
             <p className="text-blue-100">{t('cards.quickRent.description')}</p>
+          </a>
+
+          <a
+            href="https://www.123bail.fr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <h3 className="text-xl font-semibold mb-2">📄 Créer un bail</h3>
+            <p className="text-green-100">
+              Générer un contrat de bail conforme via 123bail.fr
+            </p>
           </a>
         </div>
 
