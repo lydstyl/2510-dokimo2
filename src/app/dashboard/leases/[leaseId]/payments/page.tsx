@@ -451,7 +451,7 @@ export default function LeasePaymentsPage() {
     const noticeData = {
       landlord: {
         name: lease.property.landlord.name,
-        type: lease.property.landlord.type,
+        type: lease.property.landlord.type as 'NATURAL_PERSON' | 'LEGAL_ENTITY',
         address: landlordAddress,
         email: landlordEmail,
         phone: landlordPhone,

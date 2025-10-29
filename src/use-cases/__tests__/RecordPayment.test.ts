@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RecordPayment } from '../RecordPayment';
 import { IPaymentRepository } from '../interfaces/IPaymentRepository';
-import { Payment, PaymentType } from '../../domain/entities/Payment';
+import { Payment } from '../../domain/entities/Payment';
 import { Money } from '../../domain/value-objects/Money';
 
 describe('RecordPayment', () => {
@@ -12,7 +12,6 @@ describe('RecordPayment', () => {
     mockRepository = {
       findById: vi.fn(),
       findByLeaseId: vi.fn(),
-      findByLeaseIdAndPeriod: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -25,9 +24,7 @@ describe('RecordPayment', () => {
       leaseId: 'lease-1',
       amount: 1100,
       paymentDate: new Date('2024-03-05'),
-      periodStart: new Date('2024-03-01'),
-      periodEnd: new Date('2024-03-31'),
-      type: PaymentType.FULL,
+      notes: 'Full payment',
     };
 
     const expectedPayment = Payment.create({
@@ -35,9 +32,7 @@ describe('RecordPayment', () => {
       leaseId: input.leaseId,
       amount: Money.create(input.amount),
       paymentDate: input.paymentDate,
-      periodStart: input.periodStart,
-      periodEnd: input.periodEnd,
-      type: input.type,
+      notes: input.notes,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -48,31 +43,38 @@ describe('RecordPayment', () => {
 
     expect(result.leaseId).toBe(input.leaseId);
     expect(result.amount.getValue()).toBe(1100);
-    expect(result.type).toBe(PaymentType.FULL);
     expect(mockRepository.create).toHaveBeenCalledOnce();
   });
 
-  it('should throw error if period end is before period start', async () => {
-    const input = {
-      leaseId: 'lease-1',
-      amount: 1100,
-      paymentDate: new Date('2024-03-05'),
-      periodStart: new Date('2024-03-31'),
-      periodEnd: new Date('2024-03-01'),
-      type: PaymentType.FULL,
-    };
-
-    await expect(useCase.execute(input)).rejects.toThrow('Period end must be after period start');
-  });
-
-  it('should record partial payment', async () => {
+  it('should record payment without notes', async () => {
     const input = {
       leaseId: 'lease-1',
       amount: 500,
       paymentDate: new Date('2024-03-05'),
-      periodStart: new Date('2024-03-01'),
-      periodEnd: new Date('2024-03-31'),
-      type: PaymentType.PARTIAL,
+    };
+
+    const expectedPayment = Payment.create({
+      id: 'payment-1',
+      leaseId: input.leaseId,
+      amount: Money.create(input.amount),
+      paymentDate: input.paymentDate,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    vi.mocked(mockRepository.create).mockResolvedValue(expectedPayment);
+
+    const result = await useCase.execute(input);
+
+    expect(result.amount.getValue()).toBe(500);
+    expect(result.notes).toBeUndefined();
+  });
+
+  it('should record partial payment with notes', async () => {
+    const input = {
+      leaseId: 'lease-1',
+      amount: 500,
+      paymentDate: new Date('2024-03-05'),
       notes: 'Partial payment received',
     };
 
@@ -81,9 +83,6 @@ describe('RecordPayment', () => {
       leaseId: input.leaseId,
       amount: Money.create(input.amount),
       paymentDate: input.paymentDate,
-      periodStart: input.periodStart,
-      periodEnd: input.periodEnd,
-      type: input.type,
       notes: input.notes,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -93,7 +92,6 @@ describe('RecordPayment', () => {
 
     const result = await useCase.execute(input);
 
-    expect(result.type).toBe(PaymentType.PARTIAL);
     expect(result.notes).toBe('Partial payment received');
   });
 });

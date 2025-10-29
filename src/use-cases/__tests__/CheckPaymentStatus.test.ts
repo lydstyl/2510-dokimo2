@@ -3,7 +3,7 @@ import { CheckPaymentStatus } from '../CheckPaymentStatus';
 import { ILeaseRepository } from '../interfaces/ILeaseRepository';
 import { IPaymentRepository } from '../interfaces/IPaymentRepository';
 import { Lease } from '../../domain/entities/Lease';
-import { Payment, PaymentType } from '../../domain/entities/Payment';
+import { Payment } from '../../domain/entities/Payment';
 import { Money } from '../../domain/value-objects/Money';
 
 describe('CheckPaymentStatus', () => {
@@ -50,9 +50,6 @@ describe('CheckPaymentStatus', () => {
       leaseId: 'lease-1',
       amount: Money.create(1100),
       paymentDate: new Date('2024-03-05'),
-      periodStart: new Date('2024-03-01'),
-      periodEnd: new Date('2024-03-31'),
-      type: PaymentType.FULL,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -84,9 +81,6 @@ describe('CheckPaymentStatus', () => {
       leaseId: 'lease-1',
       amount: Money.create(1100),
       paymentDate: new Date('2024-03-15'),
-      periodStart: new Date('2024-03-01'),
-      periodEnd: new Date('2024-03-31'),
-      type: PaymentType.FULL,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
