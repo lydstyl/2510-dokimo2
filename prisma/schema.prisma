@@ -77,6 +77,7 @@ model Property {
   waterMeterReadings    WaterMeterReading[]
   chargeShares          PropertyChargeShare[]
   inventories           Inventory[]
+  listings              PropertyListing[]
 
   @@index([landlordId])
   @@index([buildingId])
@@ -310,6 +311,17 @@ model InventoryAssessment {
   @@index([itemName])
 }
 
-// Add relation to Lease for inventories
-// Update Lease model to include inventories
+// PropertyListing - publication for renting a property
+model PropertyListing {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  title       String   // e.g., "Appartement T3 - Quartier calme"
+  description String   // detailed description
+  status      String   @default("ACTIVE") // "ACTIVE", "INACTIVE", "RENTED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
+  @@index([propertyId])
+  @@index([status])
+}

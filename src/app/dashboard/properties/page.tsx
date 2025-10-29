@@ -257,6 +257,13 @@ export default function PropertiesPage() {
                           📋
                         </button>
                         <button
+                          onClick={() => router.push(`/dashboard/properties/${property.id}/listings`)}
+                          className="text-purple-600 hover:text-purple-900 mr-3"
+                          title="Publications"
+                        >
+                          📢
+                        </button>
+                        <button
                           onClick={() => handleOpenEditModal(property)}
                           className="text-blue-600 hover:text-blue-900 mr-3"
                         >
