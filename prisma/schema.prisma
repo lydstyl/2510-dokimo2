@@ -41,6 +41,22 @@ model Landlord {
   @@index([userId])
 }
 
+// Building - groups multiple properties (e.g., apartment building)
+// A property without a buildingId is its own group (e.g., standalone house)
+model Building {
+  id                 String              @id @default(cuid())
+  name               String              // e.g., "Immeuble 123 Rue de Paris"
+  address            String
+  postalCode         String
+  city               String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  properties         Property[]
+  financialDocuments FinancialDocument[]
+
+  @@index([name])
+}
+
 // Property (apartment, house, garage, etc.)
 model Property {
   id                    String                 @id @default(cuid())
@@ -51,14 +67,18 @@ model Property {
   city                  String
   landlordId            String
   landlord              Landlord               @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  buildingId            String?                // optional - if null, property is standalone
+  building              Building?              @relation(fields: [buildingId], references: [id], onDelete: SetNull)
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   leases                Lease[]
   boilers               Boiler[]
   insuranceCertificates InsuranceCertificate[]
   waterMeterReadings    WaterMeterReading[]
+  chargeShares          PropertyChargeShare[]
 
   @@index([landlordId])
+  @@index([buildingId])
 }
 
 // Tenant
@@ -183,4 +203,40 @@ model WaterMeterReading {
 
   @@index([propertyId])
   @@index([readingDate])
+}
+
+// FinancialDocument - bills, taxes, invoices linked to a building
+model FinancialDocument {
+  id                 String   @id @default(cuid())
+  buildingId         String
+  building           Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  category           String   // ELECTRICITY, WATER, CLEANING, GARBAGE_TAX, PROPERTY_TAX, MAINTENANCE_WORK, etc.
+  date               DateTime
+  amount             Float    // amount in euros
+  description        String
+  documentPath       String?  // optional path to PDF or image file
+  includedInCharges  Boolean  @default(true) // if false, document is archived but not in charge calculation
+  waterConsumption   Float?   // for WATER category only - consumption in m³
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([buildingId])
+  @@index([category])
+  @@index([date])
+  @@index([includedInCharges])
+}
+
+// PropertyChargeShare - defines percentage share of charges per property per category
+model PropertyChargeShare {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  category   String   // matches FinancialDocument category
+  percentage Float    // percentage to pay (0-100), e.g., 25 means 25%
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([propertyId, category]) // one percentage per property per category
+  @@index([propertyId])
+  @@index([category])
 }
