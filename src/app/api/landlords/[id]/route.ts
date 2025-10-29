@@ -6,6 +6,48 @@ import { UpdateLandlord } from '@/use-cases/UpdateLandlord';
 import { DeleteLandlord } from '@/use-cases/DeleteLandlord';
 import { LandlordType } from '@/domain/entities/Landlord';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const repository = new PrismaLandlordRepository(prisma);
+    const landlord = await repository.findById(id);
+
+    if (!landlord) {
+      return NextResponse.json({ error: 'Landlord not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: landlord.id,
+      name: landlord.name,
+      type: landlord.type,
+      address: landlord.address,
+      email: landlord.email?.getValue(),
+      phone: landlord.phone,
+      siret: landlord.siret,
+      managerName: landlord.managerName,
+      managerEmail: landlord.managerEmail?.getValue(),
+      managerPhone: landlord.managerPhone,
+      createdAt: landlord.createdAt,
+      updatedAt: landlord.updatedAt,
+    });
+  } catch (error: any) {
+    console.error('Error fetching landlord:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

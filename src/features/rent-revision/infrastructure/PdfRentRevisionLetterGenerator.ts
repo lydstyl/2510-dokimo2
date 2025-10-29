@@ -4,8 +4,6 @@ export interface RentRevisionLetterData {
   landlord: {
     name: string;
     address: string;
-    postalCode: string;
-    city: string;
     managerName?: string;
   };
   tenant: {
@@ -26,6 +24,7 @@ export interface RentRevisionLetterData {
     newRent: number;
     charges: number;
     effectiveMonth: string;
+    irlQuarter?: string;
   };
 }
 
@@ -89,14 +88,10 @@ export class PdfRentRevisionLetterGenerator {
     y += this.LINE_HEIGHT;
 
     pdf.setFont('helvetica', 'normal');
-    pdf.text(landlord.address, this.MARGIN_LEFT, y);
-    y += this.LINE_HEIGHT;
-
-    const cityLine = `${landlord.postalCode} ${landlord.city}`.trim();
-    if (cityLine) {
-      pdf.text(cityLine, this.MARGIN_LEFT, y);
-      y += this.LINE_HEIGHT;
-    }
+    // Split address into multiple lines if needed
+    const addressLines = pdf.splitTextToSize(landlord.address, this.CONTENT_WIDTH);
+    pdf.text(addressLines, this.MARGIN_LEFT, y);
+    y += addressLines.length * this.LINE_HEIGHT;
 
     return y;
   }
@@ -154,7 +149,10 @@ export class PdfRentRevisionLetterGenerator {
     const newTotal = revision.newRent + revision.charges;
 
     // Paragraph 1
-    const para1 = "Conformément aux dispositions de votre bail, la valeur de votre loyer est indexée sur l'évolution de l'Indice de Référence des Loyers de l'INSEE du deuxième trimestre de chaque année.";
+    const quarterText = revision.irlQuarter
+      ? `l'Indice de Référence des Loyers de l'INSEE du ${revision.irlQuarter} de chaque année`
+      : `l'Indice de Référence des Loyers de l'INSEE`;
+    const para1 = `Conformément aux dispositions de votre bail, la valeur de votre loyer est indexée sur l'évolution de ${quarterText}.`;
     const lines1 = pdf.splitTextToSize(para1, this.CONTENT_WIDTH);
     pdf.text(lines1, this.MARGIN_LEFT, y);
     y += lines1.length * this.LINE_HEIGHT + 3;

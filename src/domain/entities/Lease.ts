@@ -9,6 +9,7 @@ export interface LeaseProps {
   rentAmount: Money;
   chargesAmount: Money;
   paymentDueDay: number;
+  irlQuarter?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +66,10 @@ export class Lease {
 
   get paymentDueDay(): number {
     return this.props.paymentDueDay;
+  }
+
+  get irlQuarter(): string | undefined {
+    return this.props.irlQuarter;
   }
 
   get createdAt(): Date {

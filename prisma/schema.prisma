@@ -82,6 +82,7 @@ model Lease {
   rentAmount    Float     // rent excluding charges
   chargesAmount Float     // charges
   paymentDueDay Int       // day of month when payment is due (1-31)
+  irlQuarter    String?   // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   payments      Payment[]

@@ -24,6 +24,7 @@ interface Lease {
   rentAmount: number;
   chargesAmount: number;
   paymentDueDay: number;
+  irlQuarter?: string | null;
 }
 
 interface LeaseModalProps {
@@ -46,6 +47,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
     rentAmount: '',
     chargesAmount: '',
     paymentDueDay: '1',
+    irlQuarter: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
         rentAmount: lease.rentAmount.toString(),
         chargesAmount: lease.chargesAmount.toString(),
         paymentDueDay: lease.paymentDueDay.toString(),
+        irlQuarter: lease.irlQuarter || '',
       });
     } else if (mode === 'add') {
       setFormData({
@@ -70,6 +73,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
         rentAmount: '',
         chargesAmount: '',
         paymentDueDay: '1',
+        irlQuarter: '',
       });
     }
     setError(null);
@@ -106,6 +110,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             rentAmount: parseFloat(formData.rentAmount),
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
+            irlQuarter: formData.irlQuarter || undefined,
           }),
         });
 
@@ -127,6 +132,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             rentAmount: parseFloat(formData.rentAmount),
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
+            irlQuarter: formData.irlQuarter || undefined,
           }),
         });
 
@@ -299,7 +305,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
               </div>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('paymentDueDay')} *
               </label>
@@ -312,6 +318,20 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('irlQuarter')}
+              </label>
+              <input
+                type="text"
+                value={formData.irlQuarter}
+                onChange={(e) => setFormData({ ...formData, irlQuarter: e.target.value })}
+                placeholder={t('irlQuarterPlaceholder')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">{t('irlQuarterHelp')}</p>
             </div>
 
             <div className="flex justify-end gap-3">

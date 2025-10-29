@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { propertyId, tenantId, startDate, endDate, rentAmount, chargesAmount, paymentDueDay } = body;
+    const { propertyId, tenantId, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
 
     if (!propertyId || !tenantId || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
       return NextResponse.json(
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       rentAmount: Number(rentAmount),
       chargesAmount: Number(chargesAmount),
       paymentDueDay: Number(paymentDueDay),
+      irlQuarter: irlQuarter || undefined,
     });
 
     return NextResponse.json(
@@ -103,6 +104,7 @@ export async function POST(request: NextRequest) {
         chargesAmount: lease.chargesAmount.getValue(),
         totalAmount: lease.totalAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
+        irlQuarter: lease.irlQuarter,
         createdAt: lease.createdAt,
         updatedAt: lease.updatedAt,
       },

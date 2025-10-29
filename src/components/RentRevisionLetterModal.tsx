@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Lease {
   id: string;
@@ -8,6 +8,7 @@ interface Lease {
   chargesAmount: number;
   currentRentAmount?: number;
   currentChargesAmount?: number;
+  irlQuarter?: string | null;
   property: {
     name: string;
     address: string;
@@ -36,7 +37,14 @@ export function RentRevisionLetterModal({ isOpen, onClose, lease }: RentRevision
   const [newIndex, setNewIndex] = useState('');
   const [revisionDate, setRevisionDate] = useState(new Date().toISOString().split('T')[0]);
   const [effectiveMonth, setEffectiveMonth] = useState('');
+  const [irlQuarter, setIrlQuarter] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (lease && isOpen) {
+      setIrlQuarter(lease.irlQuarter || '');
+    }
+  }, [lease, isOpen]);
 
   if (!isOpen || !lease) return null;
 
@@ -60,13 +68,11 @@ export function RentRevisionLetterModal({ isOpen, onClose, lease }: RentRevision
       // Fetch landlord details
       const landlordResponse = await fetch(`/api/landlords/${lease.property.landlord.id}`);
       let landlordAddress = 'Adresse non renseignée';
-      let landlordCity = '';
       let managerName = '';
 
       if (landlordResponse.ok) {
         const landlordData = await landlordResponse.json();
         landlordAddress = landlordData.address || 'Adresse non renseignée';
-        landlordCity = `${landlordData.postalCode || ''} ${landlordData.city || ''}`.trim();
         if (landlordData.type === 'LEGAL_ENTITY' && landlordData.managerName) {
           managerName = landlordData.managerName;
         }
@@ -76,9 +82,12 @@ export function RentRevisionLetterModal({ isOpen, onClose, lease }: RentRevision
       const dateStr = date.toLocaleDateString('fr-FR');
       const cityName = lease.property.city.charAt(0).toUpperCase() + lease.property.city.slice(1).toLowerCase();
 
+      const quarterText = irlQuarter
+        ? `l'Indice de Référence des Loyers de l'INSEE du ${irlQuarter} de chaque année`
+        : `l'Indice de Référence des Loyers de l'INSEE`;
+
       const content = `${lease.property.landlord.name}
 ${landlordAddress}
-${landlordCity}
 
 
 ${lease.tenant.firstName} ${lease.tenant.lastName}
@@ -96,7 +105,7 @@ Objet : Révision annuelle du loyer
 ${lease.tenant.firstName} ${lease.tenant.lastName},
 
 
-Conformément aux dispositions de votre bail, la valeur de votre loyer est indexée sur l'évolution de l'Indice de Référence des Loyers de l'INSEE du deuxième trimestre de chaque année.
+Conformément aux dispositions de votre bail, la valeur de votre loyer est indexée sur l'évolution de ${quarterText}.
 
 Récemment publié, cet indice s'établit désormais à ${newIndex}.
 
@@ -142,15 +151,11 @@ ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${le
       // Fetch landlord details
       const landlordResponse = await fetch(`/api/landlords/${lease.property.landlord.id}`);
       let landlordAddress = 'Adresse non renseignée';
-      let landlordPostalCode = '';
-      let landlordCity = '';
       let managerName = '';
 
       if (landlordResponse.ok) {
         const landlordData = await landlordResponse.json();
         landlordAddress = landlordData.address || 'Adresse non renseignée';
-        landlordPostalCode = landlordData.postalCode || '';
-        landlordCity = landlordData.city || '';
         if (landlordData.type === 'LEGAL_ENTITY' && landlordData.managerName) {
           managerName = landlordData.managerName;
         }
@@ -160,8 +165,6 @@ ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${le
         landlord: {
           name: lease.property.landlord.name,
           address: landlordAddress,
-          postalCode: landlordPostalCode,
-          city: landlordCity,
           managerName: managerName,
         },
         tenant: {
@@ -182,6 +185,7 @@ ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${le
           newRent: newRent,
           charges: currentCharges,
           effectiveMonth: effectiveMonth,
+          irlQuarter: irlQuarter,
         },
       };
 
@@ -266,6 +270,23 @@ ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${le
                 placeholder="Ex: 145.17"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            {/* IRL Quarter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trimestre IRL de référence (optionnel)
+              </label>
+              <input
+                type="text"
+                value={irlQuarter}
+                onChange={(e) => setIrlQuarter(e.target.value)}
+                placeholder="Ex: 2e trimestre, T2, deuxième trimestre"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Sera utilisé dans le texte du courrier. Si vide, le texte générique sera utilisé.
+              </p>
             </div>
 
             {/* Effective month */}

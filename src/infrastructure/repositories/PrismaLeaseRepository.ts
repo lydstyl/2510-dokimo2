@@ -61,6 +61,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
         rentAmount: lease.rentAmount.getValue(),
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
+        irlQuarter: lease.irlQuarter,
       },
     });
 
@@ -76,6 +77,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
         rentAmount: lease.rentAmount.getValue(),
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
+        irlQuarter: lease.irlQuarter,
       },
     });
 
@@ -98,6 +100,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       rentAmount: Money.create(raw.rentAmount),
       chargesAmount: Money.create(raw.chargesAmount),
       paymentDueDay: raw.paymentDueDay,
+      irlQuarter: raw.irlQuarter,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });
