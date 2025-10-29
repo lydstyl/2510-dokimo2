@@ -56,6 +56,7 @@ model Property {
   leases                Lease[]
   boilers               Boiler[]
   insuranceCertificates InsuranceCertificate[]
+  waterMeterReadings    WaterMeterReading[]
 
   @@index([landlordId])
 }
@@ -167,4 +168,19 @@ model InsuranceCertificate {
   @@index([propertyId])
   @@index([startDate])
   @@index([endDate])
+}
+
+// WaterMeterReading - water meter reading for a property
+model WaterMeterReading {
+  id           String   @id @default(cuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  readingDate  DateTime
+  meterReading Float    // meter reading in cubic meters (m³)
+  documentPath String?  // optional path to PDF or image file
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([readingDate])
 }

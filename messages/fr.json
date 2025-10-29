@@ -410,5 +410,38 @@
       "expired": "Expirée",
       "olderThanOneYear": "Plus d'un an"
     }
+  },
+  "waterMeter": {
+    "title": "Compteur d'eau",
+    "heading": "Relevés de compteur d'eau",
+    "addReading": "Ajouter un relevé",
+    "viewHistory": "Voir l'historique",
+    "emptyState": "Aucun relevé de compteur d'eau enregistré.",
+    "status": {
+      "recent": "Récent",
+      "old": "Ancien relevé"
+    },
+    "modal": {
+      "addTitle": "Ajouter un relevé de compteur d'eau",
+      "editTitle": "Modifier le relevé",
+      "deleteTitle": "Supprimer le relevé",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce relevé ? Le document uploadé sera conservé.",
+      "viewHistoryTitle": "Historique des relevés",
+      "readingDate": "Date du relevé",
+      "meterReading": "Index du compteur (m³)",
+      "document": "Document (PDF ou image)",
+      "selectFile": "Choisir un fichier",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "saving": "Enregistrement...",
+      "deleting": "Suppression...",
+      "noHistory": "Aucun relevé enregistré",
+      "downloadDocument": "Télécharger le document",
+      "monthsSince": "{months} mois",
+      "olderThanOneYear": "Plus d'un an",
+      "cubicMeters": "m³"
+    }
   }
 }
