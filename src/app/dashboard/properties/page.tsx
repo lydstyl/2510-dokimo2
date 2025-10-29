@@ -250,6 +250,13 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
+                          onClick={() => router.push(`/dashboard/properties/${property.id}/inventories`)}
+                          className="text-green-600 hover:text-green-900 mr-3"
+                          title="États des lieux"
+                        >
+                          📋
+                        </button>
+                        <button
                           onClick={() => handleOpenEditModal(property)}
                           className="text-blue-600 hover:text-blue-900 mr-3"
                         >

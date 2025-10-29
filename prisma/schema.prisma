@@ -76,6 +76,7 @@ model Property {
   insuranceCertificates InsuranceCertificate[]
   waterMeterReadings    WaterMeterReading[]
   chargeShares          PropertyChargeShare[]
+  inventories           Inventory[]
 
   @@index([landlordId])
   @@index([buildingId])
@@ -111,6 +112,7 @@ model Lease {
   updatedAt     DateTime  @updatedAt
   payments      Payment[]
   rentRevisions RentRevision[]
+  inventories   Inventory[]
 
   @@index([propertyId])
   @@index([tenantId])
@@ -240,3 +242,74 @@ model PropertyChargeShare {
   @@index([propertyId])
   @@index([category])
 }
+
+// InventoryTemplate - reusable template for property inventories
+model InventoryTemplate {
+  id          String                  @id @default(cuid())
+  name        String                  // e.g., "Appartement T3 standard"
+  description String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  items       InventoryTemplateItem[]
+  inventories Inventory[]
+
+  @@index([name])
+}
+
+// InventoryTemplateItem - room or item in template
+model InventoryTemplateItem {
+  id         String            @id @default(cuid())
+  templateId String
+  template   InventoryTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type       String            // "ROOM" or "ITEM"
+  name       String            // e.g., "Salle de bain", "Balcon"
+  order      Int               @default(0) // for ordering items
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([templateId])
+  @@index([order])
+}
+
+// Inventory - actual property inventory (entry or exit)
+model Inventory {
+  id          String                @id @default(cuid())
+  propertyId  String
+  property    Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  leaseId     String?
+  lease       Lease?                @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+  templateId  String?
+  template    InventoryTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  type        String                // "ENTRY" or "EXIT"
+  date        DateTime
+  notes       String?               // general notes
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  assessments InventoryAssessment[]
+
+  @@index([propertyId])
+  @@index([leaseId])
+  @@index([type])
+  @@index([date])
+}
+
+// InventoryAssessment - assessment of room/item aspect
+model InventoryAssessment {
+  id          String    @id @default(cuid())
+  inventoryId String
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  itemName    String    // room or item name (e.g., "Salle de bain")
+  aspect      String    // e.g., "FLOOR", "WALLS", "CEILING", "WINDOWS", "DOORS", "ELECTRICITY", "WATER", "GENERAL"
+  condition   String    // "B" (bon), "TB" (très bon), "M" (mauvais), "TM" (très mauvais)
+  comments    String?   // optional comments
+  photoPath   String?   // optional photo
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([inventoryId])
+  @@index([itemName])
+}
+
+// Add relation to Lease for inventories
+// Update Lease model to include inventories
+

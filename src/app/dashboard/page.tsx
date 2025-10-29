@@ -40,6 +40,7 @@ export default async function DashboardPage() {
           <DashboardCard title={t('cards.leases.title')} description={t('cards.leases.description')} href="/dashboard/leases" />
           <DashboardCard title={t('cards.boilers.title')} description={t('cards.boilers.description')} href="/dashboard/boilers" />
           <DashboardCard title="Immeubles" description="Gérer les immeubles et les charges" href="/dashboard/buildings" />
+          <DashboardCard title="États des lieux" description="Templates et états des lieux" href="/dashboard/inventory-templates" />
         </div>
 
         <div className="mb-8">
