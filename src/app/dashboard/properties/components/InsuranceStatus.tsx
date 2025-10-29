@@ -193,6 +193,17 @@ export function InsuranceStatus({ propertyId }: Props) {
         </div>
       </div>
       <div className="flex gap-2 text-xs">
+        {latestCert.documentPath && (
+          <a
+            href={latestCert.documentPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-green-600 hover:text-green-800"
+            title={t('modal.downloadDocument')}
+          >
+            📎 Télécharger
+          </a>
+        )}
         <button
           onClick={() => setShowAddModal(true)}
           className="text-blue-600 hover:text-blue-800"
