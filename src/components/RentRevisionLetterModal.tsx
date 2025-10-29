@@ -169,6 +169,7 @@ ${managerName || lease.property.landlord.name}${managerName ? `, gérant de ${le
           managerName: managerName,
         },
         tenant: {
+          civility: lease.tenant.civility,
           firstName: lease.tenant.firstName,
           lastName: lease.tenant.lastName,
         },
