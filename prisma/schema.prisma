@@ -78,6 +78,7 @@ model Property {
   chargeShares          PropertyChargeShare[]
   inventories           Inventory[]
   listings              PropertyListing[]
+  diagnostics           PropertyDiagnostic[]
 
   @@index([landlordId])
   @@index([buildingId])
@@ -324,4 +325,20 @@ model PropertyListing {
 
   @@index([propertyId])
   @@index([status])
+}
+
+// PropertyDiagnostic - property diagnostics (DPE, amiante, plomb, etc.)
+model PropertyDiagnostic {
+  id            String   @id @default(cuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name          String   // e.g., "DPE", "Diagnostic amiante", "Diagnostic plomb"
+  diagnosticDate DateTime // date when diagnostic was performed
+  expiryDate    DateTime // date when diagnostic expires
+  pdfPath       String   // path to stored PDF file
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([expiryDate])
 }

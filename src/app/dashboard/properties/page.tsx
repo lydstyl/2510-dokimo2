@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { BoilerStatus } from './components/BoilerStatus';
 import { InsuranceStatus } from './components/InsuranceStatus';
 import { WaterMeterStatus } from './components/WaterMeterStatus';
+import { DiagnosticStatus } from './components/DiagnosticStatus';
 
 type PropertyType = 'APARTMENT' | 'HOUSE' | 'GARAGE' | 'PARKING' | 'COMMERCIAL' | 'OTHER';
 
@@ -218,6 +219,7 @@ export default function PropertiesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chaudières</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assurance</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compteur d'eau</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnostics</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
@@ -247,6 +249,9 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <WaterMeterStatus propertyId={property.id} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <DiagnosticStatus propertyId={property.id} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
