@@ -140,6 +140,19 @@
     "actions": {
       "edit": "Modifier",
       "delete": "Supprimer"
+    },
+    "addModal": {
+      "title": "Ajouter un bien"
+    },
+    "form": {
+      "name": "Nom du bien",
+      "type": "Type de bien",
+      "landlord": "Propriétaire",
+      "address": "Adresse",
+      "postalCode": "Code postal",
+      "city": "Ville",
+      "cancel": "Annuler",
+      "save": "Enregistrer"
     }
   },
   "tenants": {

@@ -214,7 +214,6 @@ export default function PropertiesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.address')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.landlord')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chaudières</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -237,34 +236,6 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <BoilerStatus propertyId={property.id} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => router.push(`/dashboard/properties/${property.id}/inventories`)}
-                          className="text-green-600 hover:text-green-900 mr-3"
-                          title="États des lieux"
-                        >
-                          📋
-                        </button>
-                        <button
-                          onClick={() => router.push(`/dashboard/properties/${property.id}/listings`)}
-                          className="text-purple-600 hover:text-purple-900 mr-3"
-                          title="Publications"
-                        >
-                          📢
-                        </button>
-                        <button
-                          onClick={() => handleOpenEditModal(property)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          {t('actions.edit')}
-                        </button>
-                        <button
-                          onClick={() => setDeletingProperty(property)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          {t('actions.delete')}
-                        </button>
                       </td>
                     </tr>
                   ))}
