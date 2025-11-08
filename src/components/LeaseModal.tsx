@@ -18,7 +18,7 @@ interface Tenant {
 interface Lease {
   id: string;
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[];
   startDate: Date;
   endDate: Date | null;
   rentAmount: number;
@@ -41,7 +41,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
   const t = useTranslations('leases.leaseModal');
   const [formData, setFormData] = useState({
     propertyId: '',
-    tenantId: '',
+    tenantIds: [] as string[],
     startDate: '',
     endDate: '',
     rentAmount: '',
@@ -49,6 +49,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
     paymentDueDay: '1',
     irlQuarter: '',
   });
+  const [selectedTenantId, setSelectedTenantId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +57,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
     if (lease && mode === 'edit') {
       setFormData({
         propertyId: lease.propertyId,
-        tenantId: lease.tenantId,
+        tenantIds: lease.tenantIds,
         startDate: new Date(lease.startDate).toISOString().split('T')[0],
         endDate: lease.endDate ? new Date(lease.endDate).toISOString().split('T')[0] : '',
         rentAmount: lease.rentAmount.toString(),
@@ -67,7 +68,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
     } else if (mode === 'add') {
       setFormData({
         propertyId: '',
-        tenantId: '',
+        tenantIds: [],
         startDate: new Date().toISOString().split('T')[0],
         endDate: '',
         rentAmount: '',
@@ -76,8 +77,26 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
         irlQuarter: '',
       });
     }
+    setSelectedTenantId('');
     setError(null);
   }, [lease, mode, isOpen]);
+
+  const handleAddTenant = () => {
+    if (selectedTenantId && !formData.tenantIds.includes(selectedTenantId)) {
+      setFormData({
+        ...formData,
+        tenantIds: [...formData.tenantIds, selectedTenantId],
+      });
+      setSelectedTenantId('');
+    }
+  };
+
+  const handleRemoveTenant = (tenantId: string) => {
+    setFormData({
+      ...formData,
+      tenantIds: formData.tenantIds.filter(id => id !== tenantId),
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -104,7 +123,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
           },
           body: JSON.stringify({
             propertyId: formData.propertyId,
-            tenantId: formData.tenantId,
+            tenantIds: formData.tenantIds,
             startDate: formData.startDate,
             endDate: formData.endDate || undefined,
             rentAmount: parseFloat(formData.rentAmount),
@@ -126,7 +145,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
           },
           body: JSON.stringify({
             propertyId: formData.propertyId,
-            tenantId: formData.tenantId,
+            tenantIds: formData.tenantIds,
             startDate: formData.startDate,
             endDate: formData.endDate || undefined,
             rentAmount: parseFloat(formData.rentAmount),
@@ -229,21 +248,61 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('tenant')} *
+                {t('tenants')} *
               </label>
-              <select
-                value={formData.tenantId}
-                onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">{t('selectTenant')}</option>
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.firstName} {tenant.lastName}
-                  </option>
-                ))}
-              </select>
+
+              {/* Selected tenants list */}
+              {formData.tenantIds.length > 0 && (
+                <div className="mb-2 space-y-1">
+                  {formData.tenantIds.map((tenantId) => {
+                    const tenant = tenants.find(t => t.id === tenantId);
+                    return tenant ? (
+                      <div key={tenantId} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-md">
+                        <span className="text-sm text-gray-900">
+                          {tenant.firstName} {tenant.lastName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTenant(tenantId)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          {t('removeTenant')}
+                        </button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              )}
+
+              {formData.tenantIds.length === 0 && (
+                <p className="text-sm text-gray-500 mb-2">{t('noTenantSelected')}</p>
+              )}
+
+              {/* Add tenant selector */}
+              <div className="flex gap-2">
+                <select
+                  value={selectedTenantId}
+                  onChange={(e) => setSelectedTenantId(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">{t('selectTenants')}</option>
+                  {tenants
+                    .filter(tenant => !formData.tenantIds.includes(tenant.id))
+                    .map((tenant) => (
+                      <option key={tenant.id} value={tenant.id}>
+                        {tenant.firstName} {tenant.lastName}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleAddTenant}
+                  disabled={!selectedTenantId}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {t('addTenant')}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -345,7 +404,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (mode !== 'delete' && formData.tenantIds.length === 0)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSubmitting ? t('saving') : t('save')}

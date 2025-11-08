@@ -80,9 +80,16 @@ export default function LeasesPage() {
       }
       const leasesData = await leasesResponse.json();
 
+      // Transform tenants structure from API format to client format
+      const transformedLeases = leasesData.map((lease: any) => ({
+        ...lease,
+        tenants: lease.tenants.map((lt: any) => lt.tenant),
+        tenantIds: lease.tenants.map((lt: any) => lt.tenant.id),
+      }));
+
       // Fetch current rent for each lease
       const leasesWithCurrentRent = await Promise.all(
-        leasesData.map(async (lease: Lease) => {
+        transformedLeases.map(async (lease: Lease) => {
           try {
             // Get current month
             const now = new Date();
