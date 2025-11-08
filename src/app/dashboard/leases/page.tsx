@@ -43,6 +43,7 @@ interface Lease {
   startDate: Date;
   endDate: Date | null;
   irlQuarter?: string | null;
+  note?: string | null;
   property: Property;
   tenants: Tenant[];
   tenant: Tenant; // For backward compatibility with RentRevisionLetterModal
@@ -235,8 +236,17 @@ export default function LeasesPage() {
                   <div key={lease.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                           {lease.property.name}
+                          {lease.note && (
+                            <span
+                              className="text-blue-600 cursor-help"
+                              title={lease.note}
+                              aria-label="Ce bail contient une note"
+                            >
+                              📝
+                            </span>
+                          )}
                         </h3>
                         <p className="text-sm text-gray-600">
                           {lease.property.address}, {lease.property.postalCode} {lease.property.city}
