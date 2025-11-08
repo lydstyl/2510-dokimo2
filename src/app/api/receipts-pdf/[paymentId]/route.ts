@@ -94,6 +94,7 @@ export async function GET(
         email: payment.lease.property.landlord.email || undefined,
         phone: payment.lease.property.landlord.phone || undefined,
         siret: payment.lease.property.landlord.siret || undefined,
+        managerName: payment.lease.property.landlord.managerName || undefined,
       },
       tenants: payment.lease.tenants.map(lt => ({
         firstName: lt.tenant.firstName,

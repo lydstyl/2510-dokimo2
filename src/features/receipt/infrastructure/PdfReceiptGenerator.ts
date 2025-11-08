@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { PhoneNumber } from '@/domain/value-objects/PhoneNumber';
 
 export interface ReceiptData {
   receiptNumber: string;
@@ -12,6 +13,7 @@ export interface ReceiptData {
     email?: string;
     phone?: string;
     siret?: string;
+    managerName?: string;
   };
   tenants: Array<{
     firstName: string;
@@ -73,12 +75,8 @@ export class PdfReceiptGenerator {
     yPosition = this.addMetadata(pdf, data, yPosition);
     yPosition += 5;
 
-    // Landlord section
-    yPosition = this.addLandlordSection(pdf, data.landlord, data.receiptType, yPosition);
-    yPosition += 5;
-
-    // Tenant section
-    yPosition = this.addTenantSection(pdf, data.tenants, yPosition);
+    // Landlord and Tenant sections in 2 columns
+    yPosition = this.addLandlordAndTenantsColumns(pdf, data.landlord, data.tenants, yPosition);
     yPosition += 5;
 
     // Property section
@@ -229,6 +227,83 @@ export class PdfReceiptGenerator {
     });
 
     return y;
+  }
+
+  private addLandlordAndTenantsColumns(
+    pdf: jsPDF,
+    landlord: ReceiptData['landlord'],
+    tenants: ReceiptData['tenants'],
+    y: number
+  ): number {
+    const columnWidth = this.CONTENT_WIDTH / 2;
+    const leftColumnX = this.MARGIN_LEFT;
+    const rightColumnX = this.MARGIN_LEFT + columnWidth + 5;
+
+    // LEFT COLUMN - BAILLEUR
+    let leftY = y;
+    leftY = this.addSectionHeader(pdf, 'BAILLEUR', leftY);
+
+    // Show company name and manager name if legal entity with manager
+    if (landlord.type === 'LEGAL_ENTITY' && landlord.managerName) {
+      pdf.text(`Nom : ${landlord.name}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+      pdf.text(`Gérant : ${landlord.managerName}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+    } else {
+      pdf.text(`Nom : ${landlord.name}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+    }
+
+    pdf.text(`Adresse : ${landlord.address}`, leftColumnX, leftY);
+    leftY += this.LINE_HEIGHT;
+
+    if (landlord.email) {
+      pdf.text(`Email : ${landlord.email}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+    }
+
+    if (landlord.phone) {
+      pdf.text(`Téléphone : ${PhoneNumber.format(landlord.phone)}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+    }
+
+    if (landlord.siret) {
+      pdf.text(`SIRET : ${landlord.siret}`, leftColumnX, leftY);
+      leftY += this.LINE_HEIGHT;
+    }
+
+    // RIGHT COLUMN - LOCATAIRE(S)
+    let rightY = y;
+    tenants.forEach((tenant, index) => {
+      const label = tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
+
+      // Add header for each tenant
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(label, rightColumnX, rightY);
+      pdf.setFont('helvetica', 'normal');
+      rightY += this.LINE_HEIGHT;
+
+      pdf.text(`Nom : ${tenant.firstName} ${PhoneNumber.formatLastName(tenant.lastName)}`, rightColumnX, rightY);
+      rightY += this.LINE_HEIGHT;
+
+      if (tenant.email) {
+        pdf.text(`Email : ${tenant.email}`, rightColumnX, rightY);
+        rightY += this.LINE_HEIGHT;
+      }
+
+      if (tenant.phone) {
+        pdf.text(`Téléphone : ${PhoneNumber.format(tenant.phone)}`, rightColumnX, rightY);
+        rightY += this.LINE_HEIGHT;
+      }
+
+      // Add spacing between tenants if there are multiple
+      if (tenants.length > 1 && index < tenants.length - 1) {
+        rightY += this.LINE_HEIGHT * 0.5;
+      }
+    });
+
+    // Return the maximum Y position from both columns
+    return Math.max(leftY, rightY);
   }
 
   private addPropertySection(

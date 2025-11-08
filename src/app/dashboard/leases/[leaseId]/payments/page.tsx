@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { PhoneNumber } from '@/domain/value-objects/PhoneNumber';
 
 interface Tenant {
   id: string;
@@ -517,9 +518,9 @@ export default function LeasePaymentsPage() {
       ? lease.tenants.map((t, index) => {
           const label = lease.tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
           return `${label}
-${t.firstName} ${t.lastName}
+${t.firstName} ${PhoneNumber.formatLastName(t.lastName)}
 ${t.email || 'Email non renseigné'}
-${t.phone || 'Téléphone non renseigné'}`;
+${PhoneNumber.format(t.phone) || 'Téléphone non renseigné'}`;
         }).join('\n\n')
       : 'Aucun locataire';
 
@@ -700,9 +701,9 @@ Document généré automatiquement par le système de gestion locative.
       return lease.tenants.map((t, index) => {
         const label = lease.tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
         return `${label}
-${t.firstName} ${t.lastName}
+${t.firstName} ${PhoneNumber.formatLastName(t.lastName)}
 ${t.email || 'Email non renseigné'}
-${t.phone || 'Téléphone non renseigné'}`;
+${PhoneNumber.format(t.phone) || 'Téléphone non renseigné'}`;
       }).join('\n\n');
     };
 
@@ -712,9 +713,9 @@ ${t.phone || 'Téléphone non renseigné'}`;
         return 'le(s) locataire(s)';
       }
       if (lease.tenants.length === 1) {
-        return `${lease.tenants[0].firstName} ${lease.tenants[0].lastName}`;
+        return `${lease.tenants[0].firstName} ${PhoneNumber.formatLastName(lease.tenants[0].lastName)}`;
       }
-      const names = lease.tenants.map(t => `${t.firstName} ${t.lastName}`);
+      const names = lease.tenants.map(t => `${t.firstName} ${PhoneNumber.formatLastName(t.lastName)}`);
       const lastTenant = names.pop();
       return `${names.join(', ')} et ${lastTenant}`;
     };
