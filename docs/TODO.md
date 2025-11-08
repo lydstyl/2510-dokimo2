@@ -1,5 +1,3 @@
 - Bug loyer dû Mahieu novembre 2025 395 au lieu de 398,59 comme septembre et octobre
 - Testelin
 - Samba depot et prorata
-- Dans la page Point rapide des loyers /dashboard/quick-rent-overview je veux un bouton qui permet de télécharger toutes les quittances, trop perçu et reçu partiel du mois. Si besoin, il faudra peut être les mettre dans un .zip. S'il y a un .zip, je veux qu'il porte le nom du mois ainsi : <année au format AAAA>-<mois au format MM>-dokimo.zip. À l'intérieur je veux que les documents soit avec ce format <année exemple2025>_<mois exemple 11>_<type de document exemple quittance>\_<nom du premier locataire du bail exemple JANOT>.pdf
-- bug persistance note bail

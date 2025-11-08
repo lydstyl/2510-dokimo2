@@ -83,11 +83,15 @@ export default function LeasesPage() {
       const leasesData = await leasesResponse.json();
 
       // Transform tenants structure from API format to client format
-      const transformedLeases = leasesData.map((lease: any) => ({
-        ...lease,
-        tenants: lease.tenants.map((lt: any) => lt.tenant),
-        tenantIds: lease.tenants.map((lt: any) => lt.tenant.id),
-      }));
+      const transformedLeases = leasesData.map((lease: any) => {
+        const tenants = lease.tenants.map((lt: any) => lt.tenant);
+        return {
+          ...lease,
+          tenants,
+          tenantIds: tenants.map((t: any) => t.id),
+          tenant: tenants[0], // For backward compatibility with RentRevisionLetterModal
+        };
+      });
 
       // Fetch current rent for each lease
       const leasesWithCurrentRent = await Promise.all(
