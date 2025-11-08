@@ -177,7 +177,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
   };
 
   const selectedProperty = properties.find(p => p.id === formData.propertyId);
-  const selectedTenant = tenants.find(t => t.id === formData.tenantId);
+  const selectedTenant = tenants.find(t => t.id === formData.tenantIds[0]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
@@ -404,7 +404,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || (mode !== 'delete' && formData.tenantIds.length === 0)}
+                disabled={isSubmitting || formData.tenantIds.length === 0}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSubmitting ? t('saving') : t('save')}

@@ -343,7 +343,13 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "loading": "Chargement...",
-    "currency": "€"
+    "currency": "€",
+    "note": "Note",
+    "notes": "Notes",
+    "addNote": "Ajouter une note",
+    "editNote": "Modifier la note",
+    "noNote": "Aucune note",
+    "markdownSupported": "Markdown supporté"
   },
   "boilers": {
     "title": "Chaudières",

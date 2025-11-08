@@ -95,6 +95,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
         irlQuarter: lease.irlQuarter,
+        note: lease.note,
         tenants: {
           create: lease.tenantIds.map(tenantId => ({
             id: `${lease.id}_${tenantId}`,
@@ -129,6 +130,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
         irlQuarter: lease.irlQuarter,
+        note: lease.note,
         tenants: {
           create: lease.tenantIds.map(tenantId => ({
             id: `${lease.id}_${tenantId}`,
@@ -167,6 +169,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       chargesAmount: Money.create(raw.chargesAmount),
       paymentDueDay: raw.paymentDueDay,
       irlQuarter: raw.irlQuarter,
+      note: raw.note,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });

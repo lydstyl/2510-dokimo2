@@ -16,6 +16,7 @@ export interface LandlordProps {
   managerName?: string;
   managerEmail?: Email;
   managerPhone?: string;
+  note?: string;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -92,6 +93,10 @@ export class Landlord {
 
   get managerPhone(): string | undefined {
     return this.props.managerPhone;
+  }
+
+  get note(): string | undefined {
+    return this.props.note;
   }
 
   isLegalEntity(): boolean {

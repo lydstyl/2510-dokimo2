@@ -32,6 +32,7 @@ model Landlord {
   managerName    String?    // for legal entities - name of the manager
   managerEmail   String?    // for legal entities - manager's email
   managerPhone   String?    // for legal entities - manager's phone
+  note           String?    // optional markdown notes
   userId         String
   user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt      DateTime   @default(now())
@@ -65,6 +66,7 @@ model Property {
   address               String
   postalCode            String
   city                  String
+  note                  String?                // optional markdown notes
   landlordId            String
   landlord              Landlord               @relation(fields: [landlordId], references: [id], onDelete: Cascade)
   buildingId            String?                // optional - if null, property is standalone
@@ -97,6 +99,7 @@ model Tenant {
   managerName  String?       // for legal entities - name of the manager
   managerEmail String?       // for legal entities - manager's email
   managerPhone String?       // for legal entities - manager's phone
+  note         String?       // optional markdown notes
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   leaseTenants LeaseTenant[]
@@ -113,6 +116,7 @@ model Lease {
   chargesAmount Float          // charges
   paymentDueDay Int            // day of month when payment is due (1-31)
   irlQuarter    String?        // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
+  note          String?        // optional markdown notes
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   tenants       LeaseTenant[]

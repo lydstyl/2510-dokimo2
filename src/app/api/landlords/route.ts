@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       managerName,
       managerEmail,
       managerPhone,
-      userId: 'user-1', // Hardcoded for now
+      userId: session.userId,
     });
 
     return NextResponse.json(

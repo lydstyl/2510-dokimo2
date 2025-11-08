@@ -33,6 +33,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         address: property.address,
         postalCode: property.postalCode,
         city: property.city,
+        note: property.note,
         landlordId: property.landlordId,
       },
     });
@@ -49,6 +50,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         address: property.address,
         postalCode: property.postalCode,
         city: property.city,
+        note: property.note,
       },
     });
 
@@ -69,6 +71,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       address: raw.address,
       postalCode: raw.postalCode,
       city: raw.city,
+      note: raw.note,
       landlordId: raw.landlordId,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

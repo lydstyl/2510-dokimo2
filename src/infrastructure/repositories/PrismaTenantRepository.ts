@@ -38,6 +38,7 @@ export class PrismaTenantRepository implements ITenantRepository {
         managerName: tenant.managerName,
         managerEmail: tenant.managerEmail?.getValue(),
         managerPhone: tenant.managerPhone,
+        note: tenant.note,
       },
     });
 
@@ -58,6 +59,7 @@ export class PrismaTenantRepository implements ITenantRepository {
         managerName: tenant.managerName,
         managerEmail: tenant.managerEmail?.getValue(),
         managerPhone: tenant.managerPhone,
+        note: tenant.note,
       },
     });
 
@@ -83,6 +85,7 @@ export class PrismaTenantRepository implements ITenantRepository {
       managerName: raw.managerName,
       managerEmail: raw.managerEmail ? Email.create(raw.managerEmail) : undefined,
       managerPhone: raw.managerPhone,
+      note: raw.note,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });

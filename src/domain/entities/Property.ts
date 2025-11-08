@@ -14,6 +14,7 @@ export interface PropertyProps {
   address: string;
   postalCode: string;
   city: string;
+  note?: string;
   landlordId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +70,10 @@ export class Property {
 
   get landlordId(): string {
     return this.props.landlordId;
+  }
+
+  get note(): string | undefined {
+    return this.props.note;
   }
 
   get fullAddress(): string {

@@ -42,8 +42,10 @@ interface Lease {
   paymentDueDay: number;
   startDate: Date;
   endDate: Date | null;
+  irlQuarter?: string | null;
   property: Property;
   tenants: Tenant[];
+  tenant: Tenant; // For backward compatibility with RentRevisionLetterModal
   payments: Payment[];
   currentRentAmount?: number; // Most recent rent after revisions
   currentChargesAmount?: number; // Most recent charges after revisions

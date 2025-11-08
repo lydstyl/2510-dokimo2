@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { PhoneNumber } from '@/domain/value-objects/PhoneNumber';
+import { NoteEditor } from '@/components/NoteEditor';
 
 interface Tenant {
   id: string;
@@ -44,6 +45,7 @@ interface Lease {
   paymentDueDay: number;
   startDate: string;
   endDate: string | null;
+  note: string | null;
   tenants: Tenant[];
   property: Property;
   payments: Payment[];
@@ -128,22 +130,29 @@ export default function LeasePaymentsPage() {
 
   const calculateMonthlyRows = async (leaseData: Lease) => {
     const startDate = new Date(leaseData.startDate);
-    const endDate = leaseData.endDate ? new Date(leaseData.endDate) : new Date();
+    const now = new Date();
+    const endDate = leaseData.endDate ? new Date(leaseData.endDate) : now;
 
-    // Generate all months from start to end (or now)
+    // Use the earliest of endDate or now to avoid showing future months
+    const actualEndDate = endDate < now ? endDate : now;
+
+    // Generate all months from start to actual end date
     const months: string[] = [];
     const currentDate = new Date(startDate);
     currentDate.setDate(1); // Set to first of month
 
-    while (currentDate <= endDate) {
+    while (currentDate <= actualEndDate) {
       // Use local date formatting to avoid UTC timezone issues causing duplicates
       const yearMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
       months.push(yearMonth);
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
 
-    // Take last 24 months
-    const last24Months = months.slice(-24);
+    // Calculate how many months the lease has been active
+    const leaseAgeInMonths = months.length;
+
+    // Take last 24 months, or all months if lease is younger than 24 months
+    const last24Months = leaseAgeInMonths <= 24 ? months : months.slice(-24);
 
     // Fetch rent history for these months
     let rentHistory: { [month: string]: number } = {};
@@ -395,6 +404,28 @@ export default function LeasePaymentsPage() {
       }
     } catch (error) {
       alert('Échec de l\'enregistrement du paiement');
+    }
+  };
+
+  const handleSaveLeaseNote = async (newNote: string) => {
+    try {
+      const response = await fetch(`/api/leases/${leaseId}/note`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: newNote }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save note');
+      }
+
+      const data = await response.json();
+      if (lease) {
+        setLease({ ...lease, note: data.note });
+      }
+    } catch (error) {
+      console.error('Error saving lease note:', error);
+      throw error;
     }
   };
 
@@ -1008,6 +1039,13 @@ prochain loyer ou remboursé selon accord entre les parties.
               <p className="text-gray-500">{t('leaseSummary.dueDay')} {lease.paymentDueDay}</p>
             </div>
           </div>
+
+          {/* Lease Note */}
+          <NoteEditor
+            note={lease.note || undefined}
+            onSave={handleSaveLeaseNote}
+            entityType="lease"
+          />
         </div>
 
         {/* Monthly Payments Table */}
