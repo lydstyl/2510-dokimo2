@@ -18,7 +18,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, type, address, postalCode, city, landlordId } = body;
+    const { name, type, address, postalCode, city, landlordId, note } = body;
 
     if (!name || !type || !address || !postalCode || !city || !landlordId) {
       return NextResponse.json(
@@ -38,6 +38,7 @@ export async function PATCH(
       postalCode,
       city,
       landlordId,
+      note,
     });
 
     return NextResponse.json({
@@ -48,6 +49,7 @@ export async function PATCH(
       postalCode: property.postalCode,
       city: property.city,
       landlordId: property.landlordId,
+      note: property.note,
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
     });

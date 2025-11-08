@@ -15,6 +15,7 @@ interface Tenant {
   managerName?: string;
   managerEmail?: string;
   managerPhone?: string;
+  note?: string | null;
 }
 
 interface TenantModalProps {
@@ -38,6 +39,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
     managerName: '',
     managerEmail: '',
     managerPhone: '',
+    note: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
         managerName: tenant.managerName || '',
         managerEmail: tenant.managerEmail || '',
         managerPhone: tenant.managerPhone || '',
+        note: tenant.note || '',
       });
     } else if (mode === 'add') {
       setFormData({
@@ -68,6 +71,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
         managerName: '',
         managerEmail: '',
         managerPhone: '',
+        note: '',
       });
     }
     setError(null);
@@ -95,6 +99,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           type: formData.type,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
+          note: formData.note || null,
         };
 
         if (formData.type === 'NATURAL_PERSON') {
@@ -127,6 +132,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           type: formData.type,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
+          note: formData.note || null,
         };
 
         if (formData.type === 'NATURAL_PERSON') {
@@ -352,7 +358,7 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('phone')}
               </label>
@@ -362,6 +368,22 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Note (Markdown supporté)
+              </label>
+              <textarea
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                rows={4}
+                placeholder="## Titre&#10;- Point 1&#10;- Point 2&#10;&#10;**Important:** texte en gras"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Utilisez Markdown pour formater votre note (titres, listes, gras, italique, etc.)
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">

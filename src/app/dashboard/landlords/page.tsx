@@ -14,6 +14,7 @@ interface Landlord {
   managerName: string | null;
   managerEmail: string | null;
   managerPhone: string | null;
+  note: string | null;
   properties: any[];
 }
 
@@ -36,6 +37,7 @@ export default function LandlordsPage() {
     managerName: '',
     managerEmail: '',
     managerPhone: '',
+    note: '',
   });
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function LandlordsPage() {
       managerName: '',
       managerEmail: '',
       managerPhone: '',
+      note: '',
     });
     setShowAddModal(true);
   };
@@ -87,6 +90,7 @@ export default function LandlordsPage() {
       managerName: landlord.managerName || '',
       managerEmail: landlord.managerEmail || '',
       managerPhone: landlord.managerPhone || '',
+      note: landlord.note || '',
     });
     setEditingLandlord(landlord);
   };
@@ -110,6 +114,7 @@ export default function LandlordsPage() {
       managerName: formData.type === 'LEGAL_ENTITY' ? formData.managerName || null : null,
       managerEmail: formData.type === 'LEGAL_ENTITY' ? formData.managerEmail || null : null,
       managerPhone: formData.type === 'LEGAL_ENTITY' ? formData.managerPhone || null : null,
+      note: formData.note || null,
     };
 
     try {
@@ -407,6 +412,22 @@ export default function LandlordsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Note (Markdown supporté)
+                </label>
+                <textarea
+                  value={formData.note}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  rows={4}
+                  placeholder="## Titre&#10;- Point 1&#10;- Point 2&#10;&#10;**Important:** texte en gras"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Utilisez Markdown pour formater votre note (titres, listes, gras, italique, etc.)
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 mt-6">

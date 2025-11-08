@@ -36,6 +36,7 @@ export async function GET(
       managerName: landlord.managerName,
       managerEmail: landlord.managerEmail?.getValue(),
       managerPhone: landlord.managerPhone,
+      note: landlord.note,
       createdAt: landlord.createdAt,
       updatedAt: landlord.updatedAt,
     });
@@ -60,7 +61,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, type, address, email, phone, siret, managerName, managerEmail, managerPhone } = body;
+    const { name, type, address, email, phone, siret, managerName, managerEmail, managerPhone, note } = body;
 
     if (!name || !type || !address) {
       return NextResponse.json(
@@ -83,7 +84,8 @@ export async function PATCH(
       managerName,
       managerEmail,
       managerPhone,
-      userId: 'user-1', // Hardcoded for now
+      note,
+      userId: session.userId,
     });
 
     return NextResponse.json({
@@ -97,6 +99,7 @@ export async function PATCH(
       managerName: landlord.managerName,
       managerEmail: landlord.managerEmail?.getValue(),
       managerPhone: landlord.managerPhone,
+      note: landlord.note,
       createdAt: landlord.createdAt,
       updatedAt: landlord.updatedAt,
     });
@@ -126,7 +129,7 @@ export async function DELETE(
 
     await useCase.execute({
       id,
-      userId: 'user-1', // Hardcoded for now
+      userId: session.userId,
     });
 
     return NextResponse.json({ success: true }, { status: 200 });

@@ -19,6 +19,7 @@ interface Property {
     id: string;
     name: string;
   };
+  note: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +47,7 @@ export default function PropertiesPage() {
     postalCode: '',
     city: '',
     landlordId: '',
+    note: '',
   });
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function PropertiesPage() {
       postalCode: '',
       city: '',
       landlordId: landlords.length > 0 ? landlords[0].id : '',
+      note: '',
     });
     setShowAddModal(true);
   };
@@ -99,6 +102,7 @@ export default function PropertiesPage() {
       postalCode: property.postalCode,
       city: property.city,
       landlordId: property.landlordId,
+      note: property.note || '',
     });
     setEditingProperty(property);
   };
@@ -113,6 +117,7 @@ export default function PropertiesPage() {
       postalCode: '',
       city: '',
       landlordId: '',
+      note: '',
     });
   };
 
@@ -124,11 +129,16 @@ export default function PropertiesPage() {
       : '/api/properties';
     const method = editingProperty ? 'PATCH' : 'POST';
 
+    const payload = {
+      ...formData,
+      note: formData.note || null,
+    };
+
     try {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -346,6 +356,22 @@ export default function PropertiesPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Paris"
                     />
+                  </div>
+
+                  <div className="col-span-2 mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Note (Markdown supporté)
+                    </label>
+                    <textarea
+                      value={formData.note}
+                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      rows={4}
+                      placeholder="## Titre&#10;- Point 1&#10;- Point 2&#10;&#10;**Important:** texte en gras"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Utilisez Markdown pour formater votre note (titres, listes, gras, italique, etc.)
+                    </p>
                   </div>
                 </div>
 

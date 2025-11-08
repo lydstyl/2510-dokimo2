@@ -47,6 +47,7 @@ export default async function TenantsPage() {
     managerName: tenant.managerName ?? undefined,
     managerEmail: tenant.managerEmail ?? undefined,
     managerPhone: tenant.managerPhone ?? undefined,
+    note: tenant.note,
     leases: tenant.leaseTenants.map(lt => lt.lease),
   }));
 

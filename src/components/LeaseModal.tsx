@@ -25,6 +25,7 @@ interface Lease {
   chargesAmount: number;
   paymentDueDay: number;
   irlQuarter?: string | null;
+  note?: string | null;
 }
 
 interface LeaseModalProps {
@@ -48,6 +49,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
     chargesAmount: '',
     paymentDueDay: '1',
     irlQuarter: '',
+    note: '',
   });
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +66,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
         chargesAmount: lease.chargesAmount.toString(),
         paymentDueDay: lease.paymentDueDay.toString(),
         irlQuarter: lease.irlQuarter || '',
+        note: lease.note || '',
       });
     } else if (mode === 'add') {
       setFormData({
@@ -75,6 +78,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
         chargesAmount: '',
         paymentDueDay: '1',
         irlQuarter: '',
+        note: '',
       });
     }
     setSelectedTenantId('');
@@ -130,6 +134,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
             irlQuarter: formData.irlQuarter || undefined,
+            note: formData.note || null,
           }),
         });
 
@@ -152,6 +157,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
             irlQuarter: formData.irlQuarter || undefined,
+            note: formData.note || null,
           }),
         });
 
@@ -379,7 +385,7 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('irlQuarter')}
               </label>
@@ -391,6 +397,22 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">{t('irlQuarterHelp')}</p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Note (Markdown supporté)
+              </label>
+              <textarea
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                rows={4}
+                placeholder="## Titre&#10;- Point 1&#10;- Point 2&#10;&#10;**Important:** texte en gras"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Utilisez Markdown pour formater votre note (titres, listes, gras, italique, etc.)
+              </p>
             </div>
 
             <div className="flex justify-end gap-3">

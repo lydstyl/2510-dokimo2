@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         managerName: tenant.managerName,
         managerEmail: tenant.managerEmail?.getValue(),
         managerPhone: tenant.managerPhone,
+        note: tenant.note,
         createdAt: tenant.createdAt,
         updatedAt: tenant.updatedAt,
       }))
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, civility, firstName, lastName, email, phone, siret, managerName, managerEmail, managerPhone } = body;
+    const { type, civility, firstName, lastName, email, phone, siret, managerName, managerEmail, managerPhone, note } = body;
 
     if (!type) {
       return NextResponse.json(
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
       managerName,
       managerEmail,
       managerPhone,
+      note,
     });
 
     return NextResponse.json(
@@ -100,6 +102,7 @@ export async function POST(request: NextRequest) {
         managerName: tenant.managerName,
         managerEmail: tenant.managerEmail?.getValue(),
         managerPhone: tenant.managerPhone,
+        note: tenant.note,
         createdAt: tenant.createdAt,
         updatedAt: tenant.updatedAt,
       },

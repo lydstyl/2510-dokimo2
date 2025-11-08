@@ -16,6 +16,7 @@ interface Tenant {
   managerName?: string;
   managerEmail?: string;
   managerPhone?: string;
+  note?: string | null;
   leases: Array<{
     id: string;
     endDate: Date | null;

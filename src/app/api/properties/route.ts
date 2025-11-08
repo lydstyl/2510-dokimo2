@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
           id: property.landlord.id,
           name: property.landlord.name,
         },
+        note: property.note,
         createdAt: property.createdAt,
         updatedAt: property.updatedAt,
       }))
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, address, postalCode, city, landlordId } = body;
+    const { name, type, address, postalCode, city, landlordId, note } = body;
 
     if (!name || !type || !address || !postalCode || !city || !landlordId) {
       return NextResponse.json(
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
       postalCode,
       city,
       landlordId,
+      note,
     });
 
     return NextResponse.json(
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
         postalCode: property.postalCode,
         city: property.city,
         landlordId: property.landlordId,
+        note: property.note,
         createdAt: property.createdAt,
         updatedAt: property.updatedAt,
       },
