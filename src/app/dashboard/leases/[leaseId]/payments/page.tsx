@@ -43,7 +43,7 @@ interface Lease {
   paymentDueDay: number;
   startDate: string;
   endDate: string | null;
-  tenant: Tenant;
+  tenants: Tenant[];
   property: Property;
   payments: Payment[];
 }
@@ -108,9 +108,16 @@ export default function LeasePaymentsPage() {
         throw new Error('Failed to fetch lease details');
       }
 
-      const leaseData: Lease = await response.json();
-      setLease(leaseData);
-      await calculateMonthlyRows(leaseData);
+      const leaseData: any = await response.json();
+
+      // Transform tenants structure from API format to client format
+      const transformedLease: Lease = {
+        ...leaseData,
+        tenants: leaseData.tenants.map((lt: any) => lt.tenant),
+      };
+
+      setLease(transformedLease);
+      await calculateMonthlyRows(transformedLease);
     } catch (error) {
       console.error('Error fetching lease details:', error);
     } finally {
@@ -457,10 +464,10 @@ export default function LeasePaymentsPage() {
         phone: landlordPhone,
       },
       tenant: {
-        firstName: lease.tenant.firstName,
-        lastName: lease.tenant.lastName,
-        email: lease.tenant.email || undefined,
-        phone: lease.tenant.phone || undefined,
+        firstName: tenant.firstName,
+        lastName: tenant.lastName,
+        email: tenant.email || undefined,
+        phone: tenant.phone || undefined,
       },
       property: {
         name: lease.property.name,
@@ -512,9 +519,9 @@ export default function LeasePaymentsPage() {
 Généré le : ${currentDate}
 
 LOCATAIRE
-${lease.tenant.firstName} ${lease.tenant.lastName}
-${lease.tenant.email || 'Email non renseigné'}
-${lease.tenant.phone || 'Téléphone non renseigné'}
+${tenant.firstName} ${tenant.lastName}
+${tenant.email || 'Email non renseigné'}
+${tenant.phone || 'Téléphone non renseigné'}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -574,7 +581,7 @@ Document généré automatiquement par le système de gestion locative.
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `historique-paiements-${lease.tenant.lastName}-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `historique-paiements-${tenant.lastName}-${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -611,7 +618,7 @@ Document généré automatiquement par le système de gestion locative.
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `historique-paiements-${lease.tenant.lastName}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `historique-paiements-${tenant.lastName}-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -690,9 +697,9 @@ Généré le : ${currentDate}
 ─────────────────────────────────────────────────────
 
 LOCATAIRE
-${lease.tenant.firstName} ${lease.tenant.lastName}
-${lease.tenant.email || 'Email non renseigné'}
-${lease.tenant.phone || 'Téléphone non renseigné'}
+${tenant.firstName} ${tenant.lastName}
+${tenant.email || 'Email non renseigné'}
+${tenant.phone || 'Téléphone non renseigné'}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -731,9 +738,9 @@ Généré le : ${currentDate}
 ─────────────────────────────────────────────────────
 
 LOCATAIRE
-${lease.tenant.firstName} ${lease.tenant.lastName}
-${lease.tenant.email || 'Email non renseigné'}
-${lease.tenant.phone || 'Téléphone non renseigné'}
+${tenant.firstName} ${tenant.lastName}
+${tenant.email || 'Email non renseigné'}
+${tenant.phone || 'Téléphone non renseigné'}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -766,7 +773,7 @@ ${monthRow.payments.map(p =>
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste que le loyer pour la période du ${monthRow.monthLabel}\na été intégralement réglé par utilisation du crédit existant.` :
-  `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
+  `reconnais avoir reçu de ${tenant.firstName}\n${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
 }
 
 Cette quittance annule tous les reçus qui auraient pu
@@ -789,9 +796,9 @@ Généré le : ${currentDate}
 ─────────────────────────────────────────────────────
 
 LOCATAIRE
-${lease.tenant.firstName} ${lease.tenant.lastName}
-${lease.tenant.email || 'Email non renseigné'}
-${lease.tenant.phone || 'Téléphone non renseigné'}
+${tenant.firstName} ${tenant.lastName}
+${tenant.email || 'Email non renseigné'}
+${tenant.phone || 'Téléphone non renseigné'}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -825,7 +832,7 @@ ${monthRow.payments.map(p =>
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste qu'un crédit de ${monthRow.balanceBefore.toFixed(2)} € a été imputé\nsur le loyer pour la période du ${monthRow.monthLabel}.` :
-  `reconnais avoir reçu de ${lease.tenant.firstName}\n${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
+  `reconnais avoir reçu de ${tenant.firstName}\n${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
 }
 
 ATTENTION : Ce document ne constitue pas une quittance
@@ -846,9 +853,9 @@ Généré le : ${currentDate}
 ─────────────────────────────────────────────────────
 
 LOCATAIRE
-${lease.tenant.firstName} ${lease.tenant.lastName}
-${lease.tenant.email || 'Email non renseigné'}
-${lease.tenant.phone || 'Téléphone non renseigné'}
+${tenant.firstName} ${tenant.lastName}
+${tenant.email || 'Email non renseigné'}
+${tenant.phone || 'Téléphone non renseigné'}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -877,8 +884,8 @@ ${monthRow.payments.map(p =>
 ─────────────────────────────────────────────────────
 
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
-ci-dessus, reconnais avoir reçu de ${lease.tenant.firstName}
-${lease.tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € pour
+ci-dessus, reconnais avoir reçu de ${tenant.firstName}
+${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € pour
 la période du ${monthRow.monthLabel}.
 
 Le montant versé est supérieur au loyer dû, générant
@@ -922,6 +929,15 @@ prochain loyer ou remboursé selon accord entre les parties.
   const displayCharges = currentChargesAmount || lease.chargesAmount;
   const monthlyRent = displayRent + displayCharges;
 
+  // For backward compatibility, reference the first tenant
+  const tenant = lease.tenants && lease.tenants.length > 0 ? lease.tenants[0] : {
+    id: '',
+    firstName: 'N/A',
+    lastName: '',
+    email: null,
+    phone: null,
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-white shadow-sm">
@@ -941,7 +957,7 @@ prochain loyer ou remboursé selon accord entre les parties.
         {/* Lease Summary */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-2xl font-semibold mb-4">
-            {lease.tenant.firstName} {lease.tenant.lastName}
+            {tenant.firstName} {tenant.lastName}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
@@ -952,8 +968,8 @@ prochain loyer ou remboursé selon accord entre les parties.
             </div>
             <div>
               <p className="text-gray-600">{t('leaseSummary.contact')}</p>
-              <p className="font-medium">{lease.tenant.email || t('noEmail')}</p>
-              <p className="text-gray-500">{lease.tenant.phone || t('noPhone')}</p>
+              <p className="font-medium">{tenant.email || t('noEmail')}</p>
+              <p className="text-gray-500">{tenant.phone || t('noPhone')}</p>
             </div>
             <div>
               <p className="text-gray-600">{t('leaseSummary.monthlyRent')}</p>
@@ -1229,7 +1245,7 @@ prochain loyer ou remboursé selon accord entre les parties.
 
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                <strong>{lease.tenant.firstName} {lease.tenant.lastName}</strong>
+                <strong>{tenant.firstName} {tenant.lastName}</strong>
                 <br />
                 {lease.property.name}
               </p>
