@@ -1,1 +1,2 @@
 - Je souhaite avoir un outils qui permet de calculer le prorata temporis en fonction de la période restante à courir pour le premier mois de location pour un locataire entrant et aussi ce qu'il reste à payer pour le locataire sortant.
+- Bug loyer dû Mahieu novembre 2025 395 au lieu de 398,59 comme septembre et octobre
