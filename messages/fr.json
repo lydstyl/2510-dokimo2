@@ -83,7 +83,10 @@
       "downloadPdf": "PDF",
       "addPayment": "Ajouter paiement",
       "editPayment": "Modifier paiement",
-      "deletePayment": "Supprimer paiement"
+      "deletePayment": "Supprimer paiement",
+      "downloadAllReceipts": "Télécharger toutes les quittances",
+      "downloading": "Téléchargement en cours...",
+      "preparingZip": "Préparation du fichier ZIP..."
     },
     "modal": {
       "addTitle": "Ajouter un paiement",
