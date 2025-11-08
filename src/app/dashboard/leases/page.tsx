@@ -226,7 +226,9 @@ export default function LeasesPage() {
                 const currentRent = lease.currentRentAmount || lease.rentAmount;
                 const currentCharges = lease.currentChargesAmount || lease.chargesAmount;
                 const monthlyTotal = currentRent + currentCharges;
-                const isActive = !lease.endDate;
+                // Check if lease is active based on start/end dates
+                const now = new Date();
+                const isActive = now >= new Date(lease.startDate) && (!lease.endDate || now <= new Date(lease.endDate));
                 const lastPayment = lease.payments?.[0];
 
                 return (
