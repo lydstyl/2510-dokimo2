@@ -1,1 +1,1 @@
--
+- Dans la page Historique des Paiements (24 derniers) /dashboard/leases/53dd58e4-7e19-4705-9188-e1d24c0b6e23/payments Les reçus partiels au format .pdf (et peut etre aussi .txt) sont erronés car le Solde avant paiement ne correspond pas au Dû avant (dans le tableau qui lui est bon) et le Solde après paiement ne correspond pas au Dû après (dans le tableau qui lui est bon aussi). Corrige de manière à avoir les même nombre dans le .pdf, le .txt et le tableau. Ne change pas le tableau html qui est bon.
