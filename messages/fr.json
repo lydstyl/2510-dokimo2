@@ -355,7 +355,17 @@
     "download": "Télécharger",
     "latestNotes": "Notes du dernier paiement:",
     "notFound": "Bail introuvable",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "addChargeButton": "+ Ajouter une charge",
+    "chargeModal": {
+      "title": "Ajouter une charge",
+      "amount": "Montant (€)",
+      "date": "Date de la charge",
+      "description": "Description (optionnel)",
+      "descriptionPlaceholder": "Ex: Dépôt de garantie, Achat meuble, etc.",
+      "cancel": "Annuler",
+      "save": "Enregistrer"
+    }
   },
   "common": {
     "edit": "Modifier",

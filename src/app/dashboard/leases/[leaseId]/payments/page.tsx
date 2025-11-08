@@ -38,6 +38,14 @@ interface Payment {
   createdAt: string;
 }
 
+interface Charge {
+  id: string;
+  amount: number;
+  chargeDate: string;
+  description: string | null;
+  createdAt: string;
+}
+
 interface Lease {
   id: string;
   rentAmount: number;
@@ -49,6 +57,7 @@ interface Lease {
   tenants: Tenant[];
   property: Property;
   payments: Payment[];
+  charges: Charge[];
 }
 
 interface MonthlyRow {
@@ -56,7 +65,9 @@ interface MonthlyRow {
   monthLabel: string; // For display
   monthlyRent: number;
   payments: Payment[];
+  charges: Charge[];
   totalPaid: number;
+  totalCharges: number;
   balanceBefore: number;
   balanceAfter: number;
   receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
@@ -84,6 +95,10 @@ export default function LeasePaymentsPage() {
   const [newRentAmount, setNewRentAmount] = useState('');
   const [newChargesAmount, setNewChargesAmount] = useState('');
   const [rentChangeReason, setRentChangeReason] = useState('');
+  const [showAddCharge, setShowAddCharge] = useState(false);
+  const [chargeAmount, setChargeAmount] = useState('');
+  const [chargeDate, setChargeDate] = useState('');
+  const [chargeDescription, setChargeDescription] = useState('');
 
   useEffect(() => {
     fetchLeaseDetails();
@@ -113,10 +128,18 @@ export default function LeasePaymentsPage() {
 
       const leaseData: any = await response.json();
 
+      // Fetch charges for this lease
+      const chargesResponse = await fetch(`/api/leases/${leaseId}/charges`);
+      let charges: Charge[] = [];
+      if (chargesResponse.ok) {
+        charges = await chargesResponse.json();
+      }
+
       // Transform tenants structure from API format to client format
       const transformedLease: Lease = {
         ...leaseData,
         tenants: leaseData.tenants.map((lt: any) => lt.tenant),
+        charges: charges,
       };
 
       setLease(transformedLease);
@@ -204,19 +227,36 @@ export default function LeasePaymentsPage() {
       paymentsByMonth.get(month)!.push(payment);
     });
 
+    // Group charges by month
+    const chargesByMonth = new Map<string, Charge[]>();
+    if (leaseData.charges && leaseData.charges.length > 0) {
+      leaseData.charges.forEach(charge => {
+        const month = charge.chargeDate.substring(0, 7);
+        if (!chargesByMonth.has(month)) {
+          chargesByMonth.set(month, []);
+        }
+        chargesByMonth.get(month)!.push(charge);
+      });
+    }
+
     // Calculate running balance
     let runningBalance = 0;
     const rows: MonthlyRow[] = [];
 
     last24Months.forEach(month => {
       const monthPayments = paymentsByMonth.get(month) || [];
+      const monthCharges = chargesByMonth.get(month) || [];
       const totalPaid = monthPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalCharges = monthCharges.reduce((sum, c) => sum + c.amount, 0);
 
       // Get rent for this specific month (may vary due to rent revisions)
       const monthlyRent = rentHistory[month] || (leaseData.rentAmount + leaseData.chargesAmount);
 
       const balanceBefore = runningBalance;
-      runningBalance = runningBalance + totalPaid - monthlyRent;
+      // Payments increase balance (positive), rent and charges decrease it (negative)
+      // Balance = what tenant has paid - what they owe
+      // Positive balance = overpayment, negative = debt
+      runningBalance = runningBalance + totalPaid - monthlyRent - totalCharges;
       const balanceAfter = runningBalance;
 
       // Determine receipt type
@@ -258,7 +298,11 @@ export default function LeasePaymentsPage() {
         payments: monthPayments.sort((a, b) =>
           new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
         ),
+        charges: monthCharges.sort((a, b) =>
+          new Date(b.chargeDate).getTime() - new Date(a.chargeDate).getTime()
+        ),
         totalPaid,
+        totalCharges,
         balanceBefore,
         balanceAfter,
         receiptType,
@@ -404,6 +448,42 @@ export default function LeasePaymentsPage() {
       }
     } catch (error) {
       alert('Échec de l\'enregistrement du paiement');
+    }
+  };
+
+  const handleAddCharge = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!lease) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const payload = {
+      leaseId: lease.id,
+      amount: parseFloat(formData.get('amount') as string),
+      chargeDate: formData.get('chargeDate') as string,
+      description: formData.get('description') as string || null,
+    };
+
+    try {
+      const response = await fetch('/api/charges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setShowAddCharge(false);
+        setChargeAmount('');
+        setChargeDate('');
+        setChargeDescription('');
+        fetchLeaseDetails();
+      } else {
+        const error = await response.json();
+        alert('Erreur: ' + error.error);
+      }
+    } catch (error) {
+      alert('Échec de l\'enregistrement de la charge');
     }
   };
 
@@ -1087,6 +1167,12 @@ prochain loyer ou remboursé selon accord entre les parties.
               >
                 + Ajouter un paiement
               </button>
+              <button
+                onClick={() => setShowAddCharge(true)}
+                className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700"
+              >
+                {t('addChargeButton')}
+              </button>
             </div>
           </div>
 
@@ -1130,6 +1216,18 @@ prochain loyer ou remboursé selon accord entre les parties.
                                 >
                                   🗑️
                                 </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {row.charges.length > 0 && (
+                          <div className="text-xs text-orange-600 mt-1">
+                            {row.charges.map((c, idx) => (
+                              <div key={c.id} className="flex items-center gap-2 mt-1">
+                                <span className="font-semibold">
+                                  {new Date(c.chargeDate).toLocaleDateString('fr-FR')}: -€{c.amount.toFixed(2)}
+                                  {c.description && ` (${c.description})`}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -1365,6 +1463,88 @@ prochain loyer ou remboursé selon accord entre les parties.
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Enregistrer le paiement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Charge Modal */}
+      {showAddCharge && lease && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">{t('chargeModal.title')}</h3>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowAddCharge(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <strong>{tenant.firstName} {tenant.lastName}</strong>
+                <br />
+                {lease.property.name}
+              </p>
+            </div>
+
+            <form onSubmit={handleAddCharge}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('chargeModal.amount')}
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  step="0.01"
+                  min="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('chargeModal.date')}
+                </label>
+                <input
+                  type="date"
+                  name="chargeDate"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('chargeModal.description')}
+                </label>
+                <input
+                  type="text"
+                  name="description"
+                  placeholder={t('chargeModal.descriptionPlaceholder')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  onClick={() => setShowAddCharge(false)}
+                >
+                  {t('chargeModal.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                >
+                  {t('chargeModal.save')}
                 </button>
               </div>
             </form>

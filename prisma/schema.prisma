@@ -121,6 +121,7 @@ model Lease {
   updatedAt     DateTime       @updatedAt
   tenants       LeaseTenant[]
   payments      Payment[]
+  charges       Charge[]
   rentRevisions RentRevision[]
   inventories   Inventory[]
 
@@ -154,6 +155,21 @@ model Payment {
 
   @@index([leaseId])
   @@index([paymentDate])
+}
+
+// Charge - additional amounts owed by tenant (e.g., security deposit, furniture purchase)
+model Charge {
+  id          String   @id @default(cuid())
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  amount      Float
+  chargeDate  DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leaseId])
+  @@index([chargeDate])
 }
 
 // RentRevision - track changes to rent over time
