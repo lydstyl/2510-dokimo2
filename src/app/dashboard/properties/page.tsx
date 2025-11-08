@@ -224,6 +224,7 @@ export default function PropertiesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.address')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.landlord')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chaudières</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -246,6 +247,22 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <BoilerStatus propertyId={property.id} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOpenEditModal(property)}
+                            className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {t('table.edit')}
+                          </button>
+                          <button
+                            onClick={() => setDeletingProperty(property)}
+                            className="text-red-600 hover:text-red-800 font-medium"
+                          >
+                            {t('table.delete')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
