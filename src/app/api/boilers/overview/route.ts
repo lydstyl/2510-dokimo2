@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
                 OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
               },
               include: {
-                tenant: true,
+                tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
               },
               orderBy: {
                 startDate: 'desc',
@@ -75,14 +79,14 @@ export async function GET(request: NextRequest) {
           postalCode: boiler.property.postalCode,
           city: boiler.property.city,
         },
-        tenant: activeLease
+        tenant: activeLease && activeLease.tenants.length > 0
           ? {
-              id: activeLease.tenant.id,
-              civility: activeLease.tenant.civility,
-              firstName: activeLease.tenant.firstName,
-              lastName: activeLease.tenant.lastName,
-              email: activeLease.tenant.email,
-              phone: activeLease.tenant.phone,
+              id: activeLease.tenants[0].tenant.id,
+              civility: activeLease.tenants[0].tenant.civility,
+              firstName: activeLease.tenants[0].tenant.firstName,
+              lastName: activeLease.tenants[0].tenant.lastName,
+              email: activeLease.tenants[0].tenant.email,
+              phone: activeLease.tenants[0].tenant.phone,
             }
           : null,
         latestMaintenance: latestMaintenance

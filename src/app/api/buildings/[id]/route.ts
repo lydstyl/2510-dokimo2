@@ -23,7 +23,11 @@ export async function GET(
             landlord: true,
             leases: {
               include: {
-                tenant: true,
+                tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
               },
               orderBy: { startDate: 'desc' },
               take: 1,
@@ -52,11 +56,11 @@ export async function GET(
           id: p.landlord.id,
           name: p.landlord.name,
         },
-        activeLease: p.leases[0]
+        activeLease: p.leases[0] && p.leases[0].tenants.length > 0
           ? {
               tenant: {
-                firstName: p.leases[0].tenant.firstName,
-                lastName: p.leases[0].tenant.lastName,
+                firstName: p.leases[0].tenants[0].tenant.firstName,
+                lastName: p.leases[0].tenants[0].tenant.lastName,
               },
             }
           : null,

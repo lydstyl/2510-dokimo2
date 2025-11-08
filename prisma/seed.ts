@@ -113,6 +113,7 @@ async function main() {
     update: {},
     create: {
       id: 'tenant-1',
+      type: 'NATURAL_PERSON',
       firstName: 'Marie',
       lastName: 'Martin',
       email: 'marie.martin@example.com',
@@ -127,6 +128,7 @@ async function main() {
     update: {},
     create: {
       id: 'tenant-2',
+      type: 'NATURAL_PERSON',
       firstName: 'Pierre',
       lastName: 'Bernard',
       email: 'pierre.bernard@example.com',
@@ -141,6 +143,7 @@ async function main() {
     update: {},
     create: {
       id: 'tenant-3',
+      type: 'NATURAL_PERSON',
       firstName: 'Sophie',
       lastName: 'Dubois',
       email: 'sophie.dubois@example.com',
@@ -158,11 +161,16 @@ async function main() {
     create: {
       id: 'lease-1',
       propertyId: property1.id,
-      tenantId: tenant1.id,
       startDate: new Date('2024-01-01'),
       rentAmount: 1200,
       chargesAmount: 150,
       paymentDueDay: 5,
+      tenants: {
+        create: {
+          id: `lease-1_${tenant1.id}`,
+          tenantId: tenant1.id,
+        },
+      },
     },
   });
 
@@ -175,11 +183,16 @@ async function main() {
     create: {
       id: 'lease-2',
       propertyId: property2.id,
-      tenantId: tenant2.id,
       startDate: new Date('2024-03-01'),
       rentAmount: 800,
       chargesAmount: 80,
       paymentDueDay: 1,
+      tenants: {
+        create: {
+          id: `lease-2_${tenant2.id}`,
+          tenantId: tenant2.id,
+        },
+      },
     },
   });
 
@@ -192,11 +205,16 @@ async function main() {
     create: {
       id: 'lease-3',
       propertyId: property3.id,
-      tenantId: tenant3.id,
       startDate: new Date('2024-05-01'),
       rentAmount: 1000,
       chargesAmount: 100,
       paymentDueDay: 10,
+      tenants: {
+        create: {
+          id: `lease-3_${tenant3.id}`,
+          tenantId: tenant3.id,
+        },
+      },
     },
   });
 

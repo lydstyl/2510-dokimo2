@@ -5,7 +5,7 @@ import { ILeaseRepository } from './interfaces/ILeaseRepository';
 export interface UpdateLeaseInput {
   id: string;
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[];  // Support multiple tenants
   startDate: Date;
   endDate?: Date;
   rentAmount: number;
@@ -27,7 +27,7 @@ export class UpdateLease {
     const updatedLease = Lease.create({
       id: input.id,
       propertyId: input.propertyId,
-      tenantId: input.tenantId,
+      tenantIds: input.tenantIds,
       startDate: input.startDate,
       endDate: input.endDate,
       rentAmount: Money.create(input.rentAmount),

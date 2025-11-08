@@ -20,7 +20,11 @@ export async function GET(
     const lease = await prisma.lease.findUnique({
       where: { id: leaseId },
       include: {
-        tenant: true,
+        tenants: {
+          include: {
+            tenant: true,
+          },
+        },
         property: {
           include: {
             landlord: true,
@@ -64,11 +68,11 @@ export async function PATCH(
 
     const { leaseId } = await params;
     const body = await request.json();
-    const { propertyId, tenantId, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
+    const { propertyId, tenantIds, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
 
-    if (!propertyId || !tenantId || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
+    if (!propertyId || !tenantIds || !Array.isArray(tenantIds) || tenantIds.length === 0 || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields or invalid tenantIds' },
         { status: 400 }
       );
     }
@@ -79,7 +83,7 @@ export async function PATCH(
     const lease = await useCase.execute({
       id: leaseId,
       propertyId,
-      tenantId,
+      tenantIds,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : undefined,
       rentAmount: Number(rentAmount),
@@ -91,7 +95,7 @@ export async function PATCH(
     return NextResponse.json({
       id: lease.id,
       propertyId: lease.propertyId,
-      tenantId: lease.tenantId,
+      tenantIds: lease.tenantIds,
       startDate: lease.startDate,
       endDate: lease.endDate,
       rentAmount: lease.rentAmount.getValue(),

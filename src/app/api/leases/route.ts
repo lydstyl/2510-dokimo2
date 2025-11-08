@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
     if (propertyId) {
       whereCondition.propertyId = propertyId;
     } else if (tenantId) {
-      whereCondition.tenantId = tenantId;
+      whereCondition.tenants = {
+        some: {
+          tenantId: tenantId,
+        },
+      };
     } else if (activeOnly) {
       const now = new Date();
       whereCondition = {
@@ -39,7 +43,11 @@ export async function GET(request: NextRequest) {
     const leasesWithRelations = await prisma.lease.findMany({
       where: whereCondition,
       include: {
-        tenant: true,
+        tenants: {
+          include: {
+            tenant: true,
+          },
+        },
         property: {
           include: {
             landlord: true,
@@ -70,11 +78,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { propertyId, tenantId, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
+    const { propertyId, tenantIds, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
 
-    if (!propertyId || !tenantId || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
+    if (!propertyId || !tenantIds || !Array.isArray(tenantIds) || tenantIds.length === 0 || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields or invalid tenantIds' },
         { status: 400 }
       );
     }
@@ -84,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     const lease = await useCase.execute({
       propertyId,
-      tenantId,
+      tenantIds,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : undefined,
       rentAmount: Number(rentAmount),
@@ -97,7 +105,7 @@ export async function POST(request: NextRequest) {
       {
         id: lease.id,
         propertyId: lease.propertyId,
-        tenantId: lease.tenantId,
+        tenantIds: lease.tenantIds,
         startDate: lease.startDate,
         endDate: lease.endDate,
         rentAmount: lease.rentAmount.getValue(),

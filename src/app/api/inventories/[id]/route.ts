@@ -21,7 +21,11 @@ export async function GET(
         property: true,
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
           },
         },
         template: {

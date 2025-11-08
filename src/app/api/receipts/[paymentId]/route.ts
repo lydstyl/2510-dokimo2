@@ -27,7 +27,11 @@ export async function GET(
       include: {
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
             property: {
               include: {
                 landlord: true,

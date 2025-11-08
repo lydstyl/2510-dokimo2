@@ -21,6 +21,7 @@ describe('DeleteTenant', () => {
 
   it('should delete an existing tenant', async () => {
     const existingTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: 'tenant-123',
       firstName: 'Jean',
       lastName: 'Dupont',

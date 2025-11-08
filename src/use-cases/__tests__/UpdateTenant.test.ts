@@ -21,6 +21,7 @@ describe('UpdateTenant', () => {
 
   it('should update a tenant with valid data', async () => {
     const existingTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: 'tenant-123',
       firstName: 'Jean',
       lastName: 'Dupont',
@@ -32,6 +33,7 @@ describe('UpdateTenant', () => {
 
     const input = {
       id: 'tenant-123',
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Durand',
       email: 'jean.durand@example.com',
@@ -39,6 +41,7 @@ describe('UpdateTenant', () => {
     };
 
     const updatedTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: input.id,
       firstName: input.firstName,
       lastName: input.lastName,
@@ -61,6 +64,7 @@ describe('UpdateTenant', () => {
   it('should throw error when tenant not found', async () => {
     const input = {
       id: 'non-existent-id',
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Dupont',
     };
@@ -73,6 +77,7 @@ describe('UpdateTenant', () => {
 
   it('should update tenant and remove email', async () => {
     const existingTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: 'tenant-123',
       firstName: 'Jean',
       lastName: 'Dupont',
@@ -84,6 +89,7 @@ describe('UpdateTenant', () => {
 
     const input = {
       id: 'tenant-123',
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Dupont',
       email: undefined,
@@ -91,6 +97,7 @@ describe('UpdateTenant', () => {
     };
 
     const updatedTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: input.id,
       firstName: input.firstName,
       lastName: input.lastName,
@@ -111,6 +118,7 @@ describe('UpdateTenant', () => {
 
   it('should throw error when firstName is empty', async () => {
     const existingTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: 'tenant-123',
       firstName: 'Jean',
       lastName: 'Dupont',
@@ -122,6 +130,7 @@ describe('UpdateTenant', () => {
 
     const input = {
       id: 'tenant-123',
+      type: 'NATURAL_PERSON' as const,
       firstName: '',
       lastName: 'Dupont',
     };
@@ -134,6 +143,7 @@ describe('UpdateTenant', () => {
 
   it('should throw error when email is invalid', async () => {
     const existingTenant = Tenant.create({
+      type: 'NATURAL_PERSON',
       id: 'tenant-123',
       firstName: 'Jean',
       lastName: 'Dupont',
@@ -145,6 +155,7 @@ describe('UpdateTenant', () => {
 
     const input = {
       id: 'tenant-123',
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Dupont',
       email: 'invalid-email',

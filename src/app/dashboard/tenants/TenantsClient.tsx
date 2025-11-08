@@ -6,10 +6,16 @@ import { TenantModal } from '@/components/TenantModal';
 
 interface Tenant {
   id: string;
+  type: 'NATURAL_PERSON' | 'LEGAL_ENTITY';
+  civility?: string;
   firstName: string;
   lastName: string;
   email?: string;
   phone?: string;
+  siret?: string;
+  managerName?: string;
+  managerEmail?: string;
+  managerPhone?: string;
   leases: Array<{
     id: string;
     endDate: Date | null;

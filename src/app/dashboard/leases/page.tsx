@@ -36,14 +36,14 @@ interface Payment {
 interface Lease {
   id: string;
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[];
   rentAmount: number;
   chargesAmount: number;
   paymentDueDay: number;
   startDate: Date;
   endDate: Date | null;
   property: Property;
-  tenant: Tenant;
+  tenants: Tenant[];
   payments: Payment[];
   currentRentAmount?: number; // Most recent rent after revisions
   currentChargesAmount?: number; // Most recent charges after revisions
@@ -240,7 +240,9 @@ export default function LeasesPage() {
                       <div>
                         <p className="text-xs text-gray-500">{t('card.tenant')}</p>
                         <p className="text-sm font-medium text-gray-900">
-                          {lease.tenant.firstName} {lease.tenant.lastName}
+                          {lease.tenants && lease.tenants.length > 0
+                            ? `${lease.tenants[0].firstName} ${lease.tenants[0].lastName}${lease.tenants.length > 1 ? ` (+${lease.tenants.length - 1})` : ''}`
+                            : 'N/A'}
                         </p>
                       </div>
                       <div>

@@ -24,7 +24,7 @@ describe('CreateLease', () => {
   it('should create a lease successfully', async () => {
     const input = {
       propertyId: 'prop-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: 1000,
       chargesAmount: 100,
@@ -34,7 +34,7 @@ describe('CreateLease', () => {
     const expectedLease = Lease.create({
       id: 'lease-1',
       propertyId: input.propertyId,
-      tenantId: input.tenantId,
+      tenantIds: input.tenantIds,
       startDate: input.startDate,
       rentAmount: Money.create(input.rentAmount),
       chargesAmount: Money.create(input.chargesAmount),
@@ -48,7 +48,7 @@ describe('CreateLease', () => {
     const result = await useCase.execute(input);
 
     expect(result.propertyId).toBe(input.propertyId);
-    expect(result.tenantId).toBe(input.tenantId);
+    expect(result.tenantIds).toEqual(input.tenantIds);
     expect(result.rentAmount.getValue()).toBe(1000);
     expect(mockRepository.create).toHaveBeenCalledOnce();
   });
@@ -56,7 +56,7 @@ describe('CreateLease', () => {
   it('should throw error for invalid payment due day', async () => {
     const input = {
       propertyId: 'prop-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: 1000,
       chargesAmount: 100,
@@ -69,7 +69,7 @@ describe('CreateLease', () => {
   it('should throw error for negative rent amount', async () => {
     const input = {
       propertyId: 'prop-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: -100,
       chargesAmount: 100,

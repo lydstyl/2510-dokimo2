@@ -6,7 +6,7 @@ describe('Lease', () => {
   const validLeaseProps = {
     id: '1',
     propertyId: 'prop-1',
-    tenantId: 'tenant-1',
+    tenantIds: ['tenant-1'],
     startDate: new Date('2024-01-01'),
     rentAmount: Money.create(1000),
     chargesAmount: Money.create(100),
@@ -20,7 +20,7 @@ describe('Lease', () => {
       const lease = Lease.create(validLeaseProps);
       expect(lease.id).toBe('1');
       expect(lease.propertyId).toBe('prop-1');
-      expect(lease.tenantId).toBe('tenant-1');
+      expect(lease.tenantIds).toEqual(['tenant-1']);
       expect(lease.rentAmount.getValue()).toBe(1000);
       expect(lease.chargesAmount.getValue()).toBe(100);
       expect(lease.paymentDueDay).toBe(5);

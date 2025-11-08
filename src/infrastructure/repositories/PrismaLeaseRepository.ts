@@ -9,6 +9,13 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   async findById(id: string): Promise<Lease | null> {
     const lease = await this.prisma.lease.findUnique({
       where: { id },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
     });
 
     if (!lease) return null;
@@ -19,6 +26,13 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   async findByPropertyId(propertyId: string): Promise<Lease[]> {
     const leases = await this.prisma.lease.findMany({
       where: { propertyId },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
       orderBy: { startDate: 'desc' },
     });
 
@@ -27,7 +41,20 @@ export class PrismaLeaseRepository implements ILeaseRepository {
 
   async findByTenantId(tenantId: string): Promise<Lease[]> {
     const leases = await this.prisma.lease.findMany({
-      where: { tenantId },
+      where: {
+        tenants: {
+          some: {
+            tenantId: tenantId,
+          },
+        },
+      },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
       orderBy: { startDate: 'desc' },
     });
 
@@ -44,6 +71,13 @@ export class PrismaLeaseRepository implements ILeaseRepository {
           { endDate: { gte: now } },
         ],
       },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
+      },
       orderBy: { startDate: 'desc' },
     });
 
@@ -55,13 +89,25 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       data: {
         id: lease.id,
         propertyId: lease.propertyId,
-        tenantId: lease.tenantId,
         startDate: lease.startDate,
         endDate: lease.endDate,
         rentAmount: lease.rentAmount.getValue(),
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
         irlQuarter: lease.irlQuarter,
+        tenants: {
+          create: lease.tenantIds.map(tenantId => ({
+            id: `${lease.id}_${tenantId}`,
+            tenantId: tenantId,
+          })),
+        },
+      },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
       },
     });
 
@@ -69,6 +115,11 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   }
 
   async update(lease: Lease): Promise<Lease> {
+    // Delete existing tenant relationships and create new ones
+    await this.prisma.leaseTenant.deleteMany({
+      where: { leaseId: lease.id },
+    });
+
     const updated = await this.prisma.lease.update({
       where: { id: lease.id },
       data: {
@@ -78,6 +129,19 @@ export class PrismaLeaseRepository implements ILeaseRepository {
         chargesAmount: lease.chargesAmount.getValue(),
         paymentDueDay: lease.paymentDueDay,
         irlQuarter: lease.irlQuarter,
+        tenants: {
+          create: lease.tenantIds.map(tenantId => ({
+            id: `${lease.id}_${tenantId}`,
+            tenantId: tenantId,
+          })),
+        },
+      },
+      include: {
+        tenants: {
+          select: {
+            tenantId: true,
+          },
+        },
       },
     });
 
@@ -91,10 +155,12 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   }
 
   private toDomain(raw: any): Lease {
+    const tenantIds = raw.tenants?.map((t: any) => t.tenantId) || [];
+
     return Lease.create({
       id: raw.id,
       propertyId: raw.propertyId,
-      tenantId: raw.tenantId,
+      tenantIds: tenantIds,
       startDate: raw.startDate,
       endDate: raw.endDate,
       rentAmount: Money.create(raw.rentAmount),

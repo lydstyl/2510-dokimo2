@@ -28,7 +28,11 @@ export async function GET(
       include: {
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
             property: {
               include: {
                 landlord: true,
@@ -92,10 +96,10 @@ export async function GET(
         siret: payment.lease.property.landlord.siret || undefined,
       },
       tenant: {
-        firstName: payment.lease.tenant.firstName,
-        lastName: payment.lease.tenant.lastName,
-        email: payment.lease.tenant.email || undefined,
-        phone: payment.lease.tenant.phone || undefined,
+        firstName: payment.lease.tenants[0].tenant.firstName,
+        lastName: payment.lease.tenants[0].tenant.lastName,
+        email: payment.lease.tenants[0].tenant.email || undefined,
+        phone: payment.lease.tenants[0].tenant.phone || undefined,
       },
       property: {
         name: payment.lease.property.name,

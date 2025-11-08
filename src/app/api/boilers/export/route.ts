@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
                 OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
               },
               include: {
-                tenant: true,
+                tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
               },
               orderBy: {
                 startDate: 'desc',
@@ -70,16 +74,19 @@ export async function GET(request: NextRequest) {
       textContent += `  ${boiler.property.postalCode} ${boiler.property.city}\n`;
 
       // Tenant info
-      if (activeLease) {
-        textContent += `\nLOCATAIRE:\n`;
-        const civility = activeLease.tenant.civility || '';
-        textContent += `  ${civility} ${activeLease.tenant.firstName} ${activeLease.tenant.lastName}\n`;
-        if (activeLease.tenant.email) {
-          textContent += `  Email: ${activeLease.tenant.email}\n`;
-        }
-        if (activeLease.tenant.phone) {
-          textContent += `  Téléphone: ${activeLease.tenant.phone}\n`;
-        }
+      if (activeLease && activeLease.tenants && activeLease.tenants.length > 0) {
+        textContent += `\nLOCATAIRE${activeLease.tenants.length > 1 ? 'S' : ''}:\n`;
+        activeLease.tenants.forEach((leaseTenant: any) => {
+          const tenantData = leaseTenant.tenant;
+          const civility = tenantData.civility || '';
+          textContent += `  ${civility} ${tenantData.firstName} ${tenantData.lastName}\n`;
+          if (tenantData.email) {
+            textContent += `    Email: ${tenantData.email}\n`;
+          }
+          if (tenantData.phone) {
+            textContent += `    Téléphone: ${tenantData.phone}\n`;
+          }
+        });
       } else {
         textContent += `\nLOCATAIRE: Aucun locataire actuel\n`;
       }

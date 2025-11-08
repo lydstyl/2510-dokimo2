@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
         ],
       },
       include: {
-        tenant: true,
+        tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
         property: true,
         payments: {
           orderBy: { paymentDate: 'desc' },
@@ -90,9 +94,9 @@ export async function GET(request: NextRequest) {
             name: lease.property.name,
           },
           tenant: {
-            id: lease.tenant.id,
-            firstName: lease.tenant.firstName,
-            lastName: lease.tenant.lastName,
+            id: lease.tenants[0].tenant.id,
+            firstName: lease.tenants[0].tenant.firstName,
+            lastName: lease.tenants[0].tenant.lastName,
           },
           month: currentMonth,
           rentDue: monthlyRent,

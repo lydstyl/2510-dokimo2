@@ -18,10 +18,14 @@ export default async function TenantsPage() {
 
   const tenantsData = await prisma.tenant.findMany({
     include: {
-      leases: {
+      leaseTenants: {
         include: {
-          property: true,
-          payments: true,
+          lease: {
+            include: {
+              property: true,
+              payments: true,
+            },
+          },
         },
       },
     },
@@ -30,11 +34,20 @@ export default async function TenantsPage() {
     },
   });
 
-  // Convert null to undefined for email and phone
+  // Convert null to undefined for email and phone, and flatten leaseTenants to leases
   const tenants = tenantsData.map(tenant => ({
-    ...tenant,
+    id: tenant.id,
+    type: tenant.type as 'NATURAL_PERSON' | 'LEGAL_ENTITY',
+    civility: tenant.civility ?? undefined,
+    firstName: tenant.firstName,
+    lastName: tenant.lastName,
     email: tenant.email ?? undefined,
     phone: tenant.phone ?? undefined,
+    siret: tenant.siret ?? undefined,
+    managerName: tenant.managerName ?? undefined,
+    managerEmail: tenant.managerEmail ?? undefined,
+    managerPhone: tenant.managerPhone ?? undefined,
+    leases: tenant.leaseTenants.map(lt => lt.lease),
   }));
 
   return (

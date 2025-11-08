@@ -21,6 +21,7 @@ describe('CreateTenant', () => {
 
   it('should create a tenant with valid data', async () => {
     const input = {
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Dupont',
       email: 'jean.dupont@example.com',
@@ -29,6 +30,7 @@ describe('CreateTenant', () => {
 
     const mockTenant = Tenant.create({
       id: 'tenant-123',
+      type: 'NATURAL_PERSON',
       firstName: input.firstName,
       lastName: input.lastName,
       email: Email.create(input.email),
@@ -53,12 +55,14 @@ describe('CreateTenant', () => {
 
   it('should create a tenant without email and phone', async () => {
     const input = {
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Marie',
       lastName: 'Martin',
     };
 
     const mockTenant = Tenant.create({
       id: 'tenant-456',
+      type: 'NATURAL_PERSON',
       firstName: input.firstName,
       lastName: input.lastName,
       createdAt: new Date(),
@@ -75,6 +79,7 @@ describe('CreateTenant', () => {
 
   it('should throw error when firstName is empty', async () => {
     const input = {
+      type: 'NATURAL_PERSON' as const,
       firstName: '',
       lastName: 'Dupont',
     };
@@ -87,6 +92,7 @@ describe('CreateTenant', () => {
 
   it('should throw error when lastName is empty', async () => {
     const input = {
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: '',
     };
@@ -99,6 +105,7 @@ describe('CreateTenant', () => {
 
   it('should throw error when email is invalid', async () => {
     const input = {
+      type: 'NATURAL_PERSON' as const,
       firstName: 'Jean',
       lastName: 'Dupont',
       email: 'invalid-email',

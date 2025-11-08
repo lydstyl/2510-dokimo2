@@ -19,7 +19,11 @@ export async function GET(request: NextRequest) {
         },
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
           },
         },
       },
@@ -37,9 +41,9 @@ export async function GET(request: NextRequest) {
         address: `${inventory.property.address}, ${inventory.property.postalCode} ${inventory.property.city}`,
         landlordName: inventory.property.landlord.name,
       },
-      tenant: inventory.lease
+      tenant: inventory.lease && inventory.lease.tenants.length > 0
         ? {
-            name: `${inventory.lease.tenant.civility || ''} ${inventory.lease.tenant.firstName} ${inventory.lease.tenant.lastName}`.trim(),
+            name: `${inventory.lease.tenants[0].tenant.civility || ''} ${inventory.lease.tenants[0].tenant.firstName} ${inventory.lease.tenants[0].tenant.lastName}`.trim(),
           }
         : null,
       createdAt: inventory.createdAt.toISOString(),

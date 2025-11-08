@@ -25,7 +25,7 @@ describe('DeleteLease', () => {
     const existingLease = Lease.create({
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: Money.create(1000),
       chargesAmount: Money.create(100),

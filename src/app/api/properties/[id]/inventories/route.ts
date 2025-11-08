@@ -21,7 +21,11 @@ export async function GET(
       include: {
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
           },
         },
         template: true,
@@ -75,7 +79,11 @@ export async function POST(
       include: {
         lease: {
           include: {
-            tenant: true,
+            tenants: {
+                  include: {
+                    tenant: true,
+                  },
+                },
           },
         },
         template: {

@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 
 export interface CreateLeaseInput {
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[];  // Support multiple tenants
   startDate: Date;
   endDate?: Date;
   rentAmount: number;
@@ -21,7 +21,7 @@ export class CreateLease {
     const lease = Lease.create({
       id: randomUUID(),
       propertyId: input.propertyId,
-      tenantId: input.tenantId,
+      tenantIds: input.tenantIds,
       startDate: input.startDate,
       endDate: input.endDate,
       rentAmount: Money.create(input.rentAmount),

@@ -25,7 +25,7 @@ describe('UpdateLease', () => {
     const existingLease = Lease.create({
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: Money.create(1000),
       chargesAmount: Money.create(100),
@@ -37,7 +37,7 @@ describe('UpdateLease', () => {
     const input = {
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-12-31'),
       rentAmount: 1200,
@@ -48,7 +48,7 @@ describe('UpdateLease', () => {
     const updatedLease = Lease.create({
       id: input.id,
       propertyId: input.propertyId,
-      tenantId: input.tenantId,
+      tenantIds: input.tenantIds,
       startDate: input.startDate,
       endDate: input.endDate,
       rentAmount: Money.create(input.rentAmount),
@@ -72,7 +72,7 @@ describe('UpdateLease', () => {
     const input = {
       id: 'non-existent-id',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: 1000,
       chargesAmount: 100,
@@ -89,7 +89,7 @@ describe('UpdateLease', () => {
     const existingLease = Lease.create({
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: Money.create(1000),
       chargesAmount: Money.create(100),
@@ -103,7 +103,7 @@ describe('UpdateLease', () => {
     const input = {
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: -100,
       chargesAmount: 100,
@@ -118,7 +118,7 @@ describe('UpdateLease', () => {
     const existingLease = Lease.create({
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: Money.create(1000),
       chargesAmount: Money.create(100),
@@ -132,7 +132,7 @@ describe('UpdateLease', () => {
     const input = {
       id: 'lease-123',
       propertyId: 'property-1',
-      tenantId: 'tenant-1',
+      tenantIds: ['tenant-1'],
       startDate: new Date('2024-01-01'),
       rentAmount: 1000,
       chargesAmount: 100,
