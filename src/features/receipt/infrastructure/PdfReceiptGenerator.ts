@@ -13,12 +13,12 @@ export interface ReceiptData {
     phone?: string;
     siret?: string;
   };
-  tenant: {
+  tenants: Array<{
     firstName: string;
     lastName: string;
     email?: string;
     phone?: string;
-  };
+  }>;
   property: {
     name: string;
     address: string;
@@ -78,7 +78,7 @@ export class PdfReceiptGenerator {
     yPosition += 5;
 
     // Tenant section
-    yPosition = this.addTenantSection(pdf, data.tenant, yPosition);
+    yPosition = this.addTenantSection(pdf, data.tenants, yPosition);
     yPosition += 5;
 
     // Property section
@@ -202,23 +202,31 @@ export class PdfReceiptGenerator {
 
   private addTenantSection(
     pdf: jsPDF,
-    tenant: ReceiptData['tenant'],
+    tenants: ReceiptData['tenants'],
     y: number
   ): number {
-    y = this.addSectionHeader(pdf, 'LOCATAIRE', y);
+    tenants.forEach((tenant, index) => {
+      const label = tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
+      y = this.addSectionHeader(pdf, label, y);
 
-    pdf.text(`Nom : ${tenant.firstName} ${tenant.lastName}`, this.MARGIN_LEFT, y);
-    y += this.LINE_HEIGHT;
-
-    if (tenant.email) {
-      pdf.text(`Email : ${tenant.email}`, this.MARGIN_LEFT, y);
+      pdf.text(`Nom : ${tenant.firstName} ${tenant.lastName}`, this.MARGIN_LEFT, y);
       y += this.LINE_HEIGHT;
-    }
 
-    if (tenant.phone) {
-      pdf.text(`Téléphone : ${tenant.phone}`, this.MARGIN_LEFT, y);
-      y += this.LINE_HEIGHT;
-    }
+      if (tenant.email) {
+        pdf.text(`Email : ${tenant.email}`, this.MARGIN_LEFT, y);
+        y += this.LINE_HEIGHT;
+      }
+
+      if (tenant.phone) {
+        pdf.text(`Téléphone : ${tenant.phone}`, this.MARGIN_LEFT, y);
+        y += this.LINE_HEIGHT;
+      }
+
+      // Add spacing between tenants if there are multiple
+      if (tenants.length > 1 && index < tenants.length - 1) {
+        y += this.LINE_HEIGHT * 0.5;
+      }
+    });
 
     return y;
   }

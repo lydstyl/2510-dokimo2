@@ -95,12 +95,12 @@ export async function GET(
         phone: payment.lease.property.landlord.phone || undefined,
         siret: payment.lease.property.landlord.siret || undefined,
       },
-      tenant: {
-        firstName: payment.lease.tenants[0].tenant.firstName,
-        lastName: payment.lease.tenants[0].tenant.lastName,
-        email: payment.lease.tenants[0].tenant.email || undefined,
-        phone: payment.lease.tenants[0].tenant.phone || undefined,
-      },
+      tenants: payment.lease.tenants.map(lt => ({
+        firstName: lt.tenant.firstName,
+        lastName: lt.tenant.lastName,
+        email: lt.tenant.email || undefined,
+        phone: lt.tenant.phone || undefined,
+      })),
       property: {
         name: payment.lease.property.name,
         address: payment.lease.property.address,

@@ -512,16 +512,24 @@ export default function LeasePaymentsPage() {
     const currentDate = new Date().toLocaleDateString('fr-FR');
     const monthlyRent = lease.rentAmount + lease.chargesAmount;
 
+    // Format all tenants
+    const tenantsSection = lease.tenants && lease.tenants.length > 0
+      ? lease.tenants.map((t, index) => {
+          const label = lease.tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
+          return `${label}
+${t.firstName} ${t.lastName}
+${t.email || 'Email non renseigné'}
+${t.phone || 'Téléphone non renseigné'}`;
+        }).join('\n\n')
+      : 'Aucun locataire';
+
     let content = `═══════════════════════════════════════════════════════════════
           HISTORIQUE DES PAIEMENTS - EXPORT COMPLET
 ═══════════════════════════════════════════════════════════════
 
 Généré le : ${currentDate}
 
-LOCATAIRE
-${tenant.firstName} ${tenant.lastName}
-${tenant.email || 'Email non renseigné'}
-${tenant.phone || 'Téléphone non renseigné'}
+${tenantsSection}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -581,7 +589,7 @@ Document généré automatiquement par le système de gestion locative.
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `historique-paiements-${tenant.lastName}-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `historique-paiements-${lease.tenants.length > 1 ? 'locataires' : (tenant.lastName || 'bail')}-${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -618,7 +626,7 @@ Document généré automatiquement par le système de gestion locative.
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `historique-paiements-${tenant.lastName}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `historique-paiements-${lease.tenants.length > 1 ? 'locataires' : (tenant.lastName || 'bail')}-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -684,6 +692,33 @@ Document généré automatiquement par le système de gestion locative.
     };
     const landlordName = getLandlordName();
 
+    // Format all tenants for display
+    const formatTenants = () => {
+      if (!lease.tenants || lease.tenants.length === 0) {
+        return 'Aucun locataire';
+      }
+      return lease.tenants.map((t, index) => {
+        const label = lease.tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE';
+        return `${label}
+${t.firstName} ${t.lastName}
+${t.email || 'Email non renseigné'}
+${t.phone || 'Téléphone non renseigné'}`;
+      }).join('\n\n');
+    };
+
+    // Format tenant names for signature text (e.g., "Jean Dupont et Marie Martin")
+    const formatTenantNames = () => {
+      if (!lease.tenants || lease.tenants.length === 0) {
+        return 'le(s) locataire(s)';
+      }
+      if (lease.tenants.length === 1) {
+        return `${lease.tenants[0].firstName} ${lease.tenants[0].lastName}`;
+      }
+      const names = lease.tenants.map(t => `${t.firstName} ${t.lastName}`);
+      const lastTenant = names.pop();
+      return `${names.join(', ')} et ${lastTenant}`;
+    };
+
     // Generate content based on receipt type
     if (receiptType === 'unpaid') {
       // AVIS DE LOYER IMPAYÉ
@@ -696,10 +731,7 @@ Généré le : ${currentDate}
 
 ─────────────────────────────────────────────────────
 
-LOCATAIRE
-${tenant.firstName} ${tenant.lastName}
-${tenant.email || 'Email non renseigné'}
-${tenant.phone || 'Téléphone non renseigné'}
+${formatTenants()}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -737,10 +769,7 @@ Généré le : ${currentDate}
 
 ─────────────────────────────────────────────────────
 
-LOCATAIRE
-${tenant.firstName} ${tenant.lastName}
-${tenant.email || 'Email non renseigné'}
-${tenant.phone || 'Téléphone non renseigné'}
+${formatTenants()}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -773,7 +802,7 @@ ${monthRow.payments.map(p =>
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste que le loyer pour la période du ${monthRow.monthLabel}\na été intégralement réglé par utilisation du crédit existant.` :
-  `reconnais avoir reçu de ${tenant.firstName}\n${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
+  `reconnais avoir reçu de ${formatTenantNames()} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
 }
 
 Cette quittance annule tous les reçus qui auraient pu
@@ -795,10 +824,7 @@ Généré le : ${currentDate}
 
 ─────────────────────────────────────────────────────
 
-LOCATAIRE
-${tenant.firstName} ${tenant.lastName}
-${tenant.email || 'Email non renseigné'}
-${tenant.phone || 'Téléphone non renseigné'}
+${formatTenants()}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -832,7 +858,7 @@ ${monthRow.payments.map(p =>
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
 ci-dessus, ${creditUsed ?
   `atteste qu'un crédit de ${monthRow.balanceBefore.toFixed(2)} € a été imputé\nsur le loyer pour la période du ${monthRow.monthLabel}.` :
-  `reconnais avoir reçu de ${tenant.firstName}\n${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
+  `reconnais avoir reçu de ${formatTenantNames()} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
 }
 
 ATTENTION : Ce document ne constitue pas une quittance
@@ -852,10 +878,7 @@ Généré le : ${currentDate}
 
 ─────────────────────────────────────────────────────
 
-LOCATAIRE
-${tenant.firstName} ${tenant.lastName}
-${tenant.email || 'Email non renseigné'}
-${tenant.phone || 'Téléphone non renseigné'}
+${formatTenants()}
 
 BIEN LOUÉ
 ${lease.property.name}
@@ -884,8 +907,8 @@ ${monthRow.payments.map(p =>
 ─────────────────────────────────────────────────────
 
 Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
-ci-dessus, reconnais avoir reçu de ${tenant.firstName}
-${tenant.lastName} la somme de ${monthRow.totalPaid.toFixed(2)} € pour
+ci-dessus, reconnais avoir reçu de ${formatTenantNames()}
+la somme de ${monthRow.totalPaid.toFixed(2)} € pour
 la période du ${monthRow.monthLabel}.
 
 Le montant versé est supérieur au loyer dû, générant
