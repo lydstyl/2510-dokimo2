@@ -127,7 +127,12 @@ export async function GET(
     const pdfGenerator = new PdfReceiptGenerator();
     const pdfBuffer = pdfGenerator.generate(receiptData);
 
-    // Generate filename based on receipt type
+    // Generate filename based on receipt type and date
+    // Format: AAAA_MM_<type>_<nom_locataire>.pdf
+    const paymentDate = new Date(payment.paymentDate);
+    const year = paymentDate.getFullYear();
+    const month = String(paymentDate.getMonth() + 1).padStart(2, '0');
+
     let filenamePart = '';
     switch (receiptType) {
       case 'full':
@@ -144,7 +149,15 @@ export async function GET(
         break;
     }
 
-    const filename = `${filenamePart}-${receiptNumber}.pdf`;
+    // Get first tenant's last name (sanitize for filename)
+    const firstTenantLastName = payment.lease.tenants[0]?.tenant.lastName || 'locataire';
+    const sanitizedLastName = firstTenantLastName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-zA-Z0-9]/g, '_')   // Replace special chars with underscore
+      .toUpperCase();
+
+    const filename = `${year}_${month}_${filenamePart}_${sanitizedLastName}.pdf`;
 
     // Return as PDF file (convert Uint8Array to Buffer for NextResponse)
     return new NextResponse(Buffer.from(pdfBuffer), {
