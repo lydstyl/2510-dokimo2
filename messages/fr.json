@@ -49,6 +49,10 @@
       "boilers": {
         "title": "Chaudières",
         "description": "Gérer les chaudières et leurs entretiens"
+      },
+      "prorata": {
+        "title": "Calcul Prorata",
+        "description": "Calculer le prorata temporis pour les entrées et sorties"
       }
     }
   },
@@ -479,6 +483,44 @@
       "monthsSince": "{months} mois",
       "olderThanOneYear": "Plus d'un an",
       "cubicMeters": "m³"
+    }
+  },
+  "prorata": {
+    "title": "Calcul Prorata Temporis",
+    "heading": "Calculateur de Prorata Temporis",
+    "description": "Calculez le montant du loyer au prorata pour les entrées et sorties de locataires",
+    "calculationType": {
+      "label": "Type de calcul",
+      "moveIn": "Entrée de locataire",
+      "moveOut": "Sortie de locataire"
+    },
+    "form": {
+      "monthlyRent": "Loyer mensuel (€)",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "calculate": "Calculer",
+      "reset": "Réinitialiser"
+    },
+    "result": {
+      "title": "Résultat du calcul",
+      "monthlyRent": "Loyer mensuel",
+      "period": "Période",
+      "daysInMonth": "Jours dans le mois",
+      "daysOccupied": "Jours occupés",
+      "dailyRate": "Tarif journalier",
+      "percentage": "Pourcentage du mois",
+      "prorataAmount": "Montant au prorata",
+      "calculation": "Calcul"
+    },
+    "help": {
+      "moveIn": "Pour un locataire entrant, indiquez la date d'entrée et la fin du mois pour calculer le montant dû pour la période restante.",
+      "moveOut": "Pour un locataire sortant, indiquez le début du mois et la date de sortie pour calculer ce qu'il reste à payer."
+    },
+    "errors": {
+      "invalidAmount": "Le montant du loyer doit être positif",
+      "invalidDates": "Les dates doivent être dans le même mois",
+      "startAfterEnd": "La date de début doit être avant ou égale à la date de fin",
+      "calculation": "Erreur lors du calcul"
     }
   }
 }

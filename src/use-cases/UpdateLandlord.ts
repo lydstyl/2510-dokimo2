@@ -1,19 +1,20 @@
-import { Landlord, LandlordType } from '../domain/entities/Landlord';
-import { Email } from '../domain/value-objects/Email';
-import { ILandlordRepository } from './interfaces/ILandlordRepository';
+import { Landlord, LandlordType } from '../domain/entities/Landlord'
+import { Email } from '../domain/value-objects/Email'
+import { ILandlordRepository } from './interfaces/ILandlordRepository'
 
 export interface UpdateLandlordInput {
-  id: string;
-  name: string;
-  type: LandlordType;
-  address: string;
-  email?: string;
-  phone?: string;
-  siret?: string;
-  managerName?: string;
-  managerEmail?: string;
-  managerPhone?: string;
-  userId: string;
+  id: string
+  name: string
+  type: LandlordType
+  address: string
+  email?: string
+  phone?: string
+  siret?: string
+  managerName?: string
+  managerEmail?: string
+  managerPhone?: string
+  note?: string
+  userId: string
 }
 
 export class UpdateLandlord {
@@ -21,14 +22,14 @@ export class UpdateLandlord {
 
   async execute(input: UpdateLandlordInput): Promise<Landlord> {
     // Check if landlord exists
-    const existingLandlord = await this.landlordRepository.findById(input.id);
+    const existingLandlord = await this.landlordRepository.findById(input.id)
     if (!existingLandlord) {
-      throw new Error('Landlord not found');
+      throw new Error('Landlord not found')
     }
 
     // Verify ownership
     if (existingLandlord.userId !== input.userId) {
-      throw new Error('Unauthorized to update this landlord');
+      throw new Error('Unauthorized to update this landlord')
     }
 
     const landlord = Landlord.create({
@@ -40,13 +41,16 @@ export class UpdateLandlord {
       phone: input.phone,
       siret: input.siret,
       managerName: input.managerName,
-      managerEmail: input.managerEmail ? Email.create(input.managerEmail) : undefined,
+      managerEmail: input.managerEmail
+        ? Email.create(input.managerEmail)
+        : undefined,
       managerPhone: input.managerPhone,
+      note: input.note,
       userId: input.userId,
       createdAt: existingLandlord.createdAt,
-      updatedAt: new Date(),
-    });
+      updatedAt: new Date()
+    })
 
-    return this.landlordRepository.update(landlord);
+    return this.landlordRepository.update(landlord)
   }
 }

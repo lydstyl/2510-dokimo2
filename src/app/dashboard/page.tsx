@@ -39,6 +39,7 @@ export default async function DashboardPage() {
           <DashboardCard title={t('cards.tenants.title')} description={t('cards.tenants.description')} href="/dashboard/tenants" />
           <DashboardCard title={t('cards.leases.title')} description={t('cards.leases.description')} href="/dashboard/leases" />
           <DashboardCard title={t('cards.boilers.title')} description={t('cards.boilers.description')} href="/dashboard/boilers" />
+          <DashboardCard title={t('cards.prorata.title')} description={t('cards.prorata.description')} href="/fr/prorata" />
           <DashboardCard title="Assurances" description="Gérer les attestations d'assurance" href="/dashboard/insurance" />
           <DashboardCard title="Compteurs d'eau" description="Suivre les relevés de compteurs" href="/dashboard/water-meters" />
           <DashboardCard title="Diagnostics" description="Gérer les diagnostics immobiliers" href="/dashboard/diagnostics" />

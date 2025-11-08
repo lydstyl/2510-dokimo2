@@ -1,14 +1,15 @@
-import { Property, PropertyType } from '../domain/entities/Property';
-import { IPropertyRepository } from './interfaces/IPropertyRepository';
-import { randomUUID } from 'crypto';
+import { Property, PropertyType } from '../domain/entities/Property'
+import { IPropertyRepository } from './interfaces/IPropertyRepository'
+import { randomUUID } from 'crypto'
 
 export interface CreatePropertyInput {
-  name: string;
-  type: PropertyType;
-  address: string;
-  postalCode: string;
-  city: string;
-  landlordId: string;
+  name: string
+  type: PropertyType
+  address: string
+  postalCode: string
+  city: string
+  landlordId: string
+  note: string
 }
 
 export class CreateProperty {
@@ -23,10 +24,11 @@ export class CreateProperty {
       postalCode: input.postalCode,
       city: input.city,
       landlordId: input.landlordId,
+      note: input.note,
       createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+      updatedAt: new Date()
+    })
 
-    return this.propertyRepository.create(property);
+    return this.propertyRepository.create(property)
   }
 }
