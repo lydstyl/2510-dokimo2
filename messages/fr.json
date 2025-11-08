@@ -84,7 +84,7 @@
       "addPayment": "Ajouter paiement",
       "editPayment": "Modifier paiement",
       "deletePayment": "Supprimer paiement",
-      "downloadAllReceipts": "Télécharger toutes les quittances",
+      "downloadAllReceipts": "Télécharger tous les documents du mois",
       "downloading": "Téléchargement en cours...",
       "preparingZip": "Préparation du fichier ZIP..."
     },

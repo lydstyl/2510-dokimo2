@@ -71,18 +71,24 @@ export async function GET(request: NextRequest) {
 
       // Determine receipt type
       let receiptType: 'unpaid' | 'partial' | 'full' | 'overpayment';
-      if (balanceAfter < 0) {
-        // Underpaid
+      if (totalPaidThisMonth === 0) {
+        // No payment this month
         receiptType = 'unpaid';
       } else if (balanceAfter === 0 && totalPaidThisMonth === monthlyRent) {
+        // Paid exactly the rent amount and balance is zero
         receiptType = 'full';
       } else if (balanceAfter === 0 && totalPaidThisMonth < monthlyRent) {
+        // Balance is zero but paid less than rent (used previous credit)
         receiptType = 'partial';
       } else if (balanceAfter > 0) {
-        // Overpaid
+        // Overpaid (balance is positive)
         receiptType = 'overpayment';
-      } else {
+      } else if (balanceAfter < 0 && totalPaidThisMonth > 0) {
+        // Paid something but still underpaid
         receiptType = 'partial';
+      } else {
+        // Default case: underpaid with no payment
+        receiptType = 'unpaid';
       }
 
       // Only include if unpaid or overpaid (balance != 0)

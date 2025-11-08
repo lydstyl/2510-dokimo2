@@ -1,3 +1,2 @@
-- Bug loyer dû Mahieu novembre 2025 395 au lieu de 398,59 comme septembre et octobre
 - Testelin
 - Samba depot et prorata

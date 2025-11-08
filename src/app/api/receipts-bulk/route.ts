@@ -149,18 +149,24 @@ export async function GET(request: NextRequest) {
 
       // Determine receipt type using the same logic as quick-rent-overview
       let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
-      if (balanceAfter < 0) {
-        // Underpaid
+      if (paymentAmount === 0) {
+        // No payment this month
         receiptType = 'unpaid';
       } else if (balanceAfter === 0 && paymentAmount === totalRent) {
+        // Paid exactly the rent amount and balance is zero
         receiptType = 'full';
       } else if (balanceAfter === 0 && paymentAmount < totalRent) {
+        // Balance is zero but paid less than rent (used previous credit)
         receiptType = 'partial';
       } else if (balanceAfter > 0) {
-        // Overpaid
+        // Overpaid (balance is positive)
         receiptType = 'overpayment';
-      } else {
+      } else if (balanceAfter < 0 && paymentAmount > 0) {
+        // Paid something but still underpaid
         receiptType = 'partial';
+      } else {
+        // Default case: underpaid with no payment
+        receiptType = 'unpaid';
       }
 
       // Skip unpaid notices as per user's request (only quittances, trop-perçu, reçu partiel)
