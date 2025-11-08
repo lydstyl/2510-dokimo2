@@ -12,6 +12,7 @@ export interface UpdateLeaseInput {
   chargesAmount: number;
   paymentDueDay: number;
   irlQuarter?: string;
+  note?: string | null;
 }
 
 export class UpdateLease {
@@ -34,6 +35,7 @@ export class UpdateLease {
       chargesAmount: Money.create(input.chargesAmount),
       paymentDueDay: input.paymentDueDay,
       irlQuarter: input.irlQuarter,
+      note: input.note !== undefined ? (input.note || undefined) : existingLease.note,
       createdAt: existingLease.createdAt,
       updatedAt: new Date(),
     });

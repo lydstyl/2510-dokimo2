@@ -68,7 +68,7 @@ export async function PATCH(
 
     const { leaseId } = await params;
     const body = await request.json();
-    const { propertyId, tenantIds, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter } = body;
+    const { propertyId, tenantIds, startDate, endDate, rentAmount, chargesAmount, paymentDueDay, irlQuarter, note } = body;
 
     if (!propertyId || !tenantIds || !Array.isArray(tenantIds) || tenantIds.length === 0 || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
       return NextResponse.json(
@@ -90,6 +90,7 @@ export async function PATCH(
       chargesAmount: Number(chargesAmount),
       paymentDueDay: Number(paymentDueDay),
       irlQuarter: irlQuarter || undefined,
+      note: note || null,
     });
 
     return NextResponse.json({

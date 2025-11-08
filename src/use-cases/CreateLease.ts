@@ -12,6 +12,7 @@ export interface CreateLeaseInput {
   chargesAmount: number;
   paymentDueDay: number;
   irlQuarter?: string;
+  note?: string | null;
 }
 
 export class CreateLease {
@@ -28,6 +29,7 @@ export class CreateLease {
       chargesAmount: Money.create(input.chargesAmount),
       paymentDueDay: input.paymentDueDay,
       irlQuarter: input.irlQuarter,
+      note: input.note || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
