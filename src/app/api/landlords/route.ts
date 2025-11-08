@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         managerName: landlord.managerName,
         managerEmail: landlord.managerEmail?.getValue(),
         managerPhone: landlord.managerPhone,
+        note: landlord.note,
         createdAt: landlord.createdAt,
         updatedAt: landlord.updatedAt
       }))
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
         managerName: landlord.managerName,
         managerEmail: landlord.managerEmail?.getValue(),
         managerPhone: landlord.managerPhone,
+        note: landlord.note,
         createdAt: landlord.createdAt,
         updatedAt: landlord.updatedAt
       },
