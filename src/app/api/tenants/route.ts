@@ -17,11 +17,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       tenants.map(tenant => ({
         id: tenant.id,
+        type: tenant.type,
         civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
         phone: tenant.phone,
+        siret: tenant.siret,
+        managerName: tenant.managerName,
+        managerEmail: tenant.managerEmail?.getValue(),
+        managerPhone: tenant.managerPhone,
         createdAt: tenant.createdAt,
         updatedAt: tenant.updatedAt,
       }))
@@ -43,11 +48,25 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { civility, firstName, lastName, email, phone } = body;
+    const { type, civility, firstName, lastName, email, phone, siret, managerName, managerEmail, managerPhone } = body;
 
-    if (!firstName || !lastName) {
+    if (!type) {
       return NextResponse.json(
-        { error: 'First name and last name are required' },
+        { error: 'Tenant type is required' },
+        { status: 400 }
+      );
+    }
+
+    if (type === 'NATURAL_PERSON' && (!firstName || !lastName)) {
+      return NextResponse.json(
+        { error: 'First name and last name are required for natural persons' },
+        { status: 400 }
+      );
+    }
+
+    if (type === 'LEGAL_ENTITY' && !firstName) {
+      return NextResponse.json(
+        { error: 'Company name is required for legal entities' },
         { status: 400 }
       );
     }
@@ -56,21 +75,31 @@ export async function POST(request: NextRequest) {
     const useCase = new CreateTenant(repository);
 
     const tenant = await useCase.execute({
+      type,
       civility,
       firstName,
       lastName,
       email,
       phone,
+      siret,
+      managerName,
+      managerEmail,
+      managerPhone,
     });
 
     return NextResponse.json(
       {
         id: tenant.id,
+        type: tenant.type,
         civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
         phone: tenant.phone,
+        siret: tenant.siret,
+        managerName: tenant.managerName,
+        managerEmail: tenant.managerEmail?.getValue(),
+        managerPhone: tenant.managerPhone,
         createdAt: tenant.createdAt,
         updatedAt: tenant.updatedAt,
       },

@@ -5,11 +5,16 @@ import { useTranslations } from 'next-intl';
 
 interface Tenant {
   id: string;
+  type: 'NATURAL_PERSON' | 'LEGAL_ENTITY';
   civility?: string;
   firstName: string;
   lastName: string;
   email?: string;
   phone?: string;
+  siret?: string;
+  managerName?: string;
+  managerEmail?: string;
+  managerPhone?: string;
 }
 
 interface TenantModalProps {
@@ -23,11 +28,16 @@ interface TenantModalProps {
 export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantModalProps) {
   const t = useTranslations('tenants.modal');
   const [formData, setFormData] = useState({
+    type: 'NATURAL_PERSON' as 'NATURAL_PERSON' | 'LEGAL_ENTITY',
     civility: '',
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    siret: '',
+    managerName: '',
+    managerEmail: '',
+    managerPhone: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,19 +45,29 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
   useEffect(() => {
     if (tenant && mode === 'edit') {
       setFormData({
+        type: tenant.type,
         civility: tenant.civility || '',
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email || '',
         phone: tenant.phone || '',
+        siret: tenant.siret || '',
+        managerName: tenant.managerName || '',
+        managerEmail: tenant.managerEmail || '',
+        managerPhone: tenant.managerPhone || '',
       });
     } else if (mode === 'add') {
       setFormData({
+        type: 'NATURAL_PERSON',
         civility: '',
         firstName: '',
         lastName: '',
         email: '',
         phone: '',
+        siret: '',
+        managerName: '',
+        managerEmail: '',
+        managerPhone: '',
       });
     }
     setError(null);
@@ -71,18 +91,31 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           throw new Error(data.error || 'Failed to delete tenant');
         }
       } else if (mode === 'edit' && tenant) {
+        const payload: any = {
+          type: formData.type,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+        };
+
+        if (formData.type === 'NATURAL_PERSON') {
+          payload.civility = formData.civility || undefined;
+          payload.firstName = formData.firstName;
+          payload.lastName = formData.lastName;
+        } else {
+          payload.firstName = formData.firstName; // company name
+          payload.lastName = ''; // empty for legal entities
+          payload.siret = formData.siret || undefined;
+          payload.managerName = formData.managerName || undefined;
+          payload.managerEmail = formData.managerEmail || undefined;
+          payload.managerPhone = formData.managerPhone || undefined;
+        }
+
         const response = await fetch(`/api/tenants/${tenant.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            civility: formData.civility || undefined,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email || undefined,
-            phone: formData.phone || undefined,
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -90,18 +123,31 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           throw new Error(data.error || 'Failed to update tenant');
         }
       } else if (mode === 'add') {
+        const payload: any = {
+          type: formData.type,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+        };
+
+        if (formData.type === 'NATURAL_PERSON') {
+          payload.civility = formData.civility || undefined;
+          payload.firstName = formData.firstName;
+          payload.lastName = formData.lastName;
+        } else {
+          payload.firstName = formData.firstName; // company name
+          payload.lastName = ''; // empty for legal entities
+          payload.siret = formData.siret || undefined;
+          payload.managerName = formData.managerName || undefined;
+          payload.managerEmail = formData.managerEmail || undefined;
+          payload.managerPhone = formData.managerPhone || undefined;
+        }
+
         const response = await fetch('/api/tenants', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            civility: formData.civility || undefined,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email || undefined,
-            phone: formData.phone || undefined,
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -166,44 +212,133 @@ export function TenantModal({ isOpen, onClose, onSave, tenant, mode }: TenantMod
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('civility')}
+                {t('type')} *
               </label>
               <select
-                value={formData.civility}
-                onChange={(e) => setFormData({ ...formData, civility: e.target.value })}
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'NATURAL_PERSON' | 'LEGAL_ENTITY' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               >
-                <option value="">{t('selectCivility')}</option>
-                <option value="M.">M.</option>
-                <option value="Mme">Mme</option>
+                <option value="">{t('selectType')}</option>
+                <option value="NATURAL_PERSON">{t('naturalPerson')}</option>
+                <option value="LEGAL_ENTITY">{t('legalEntity')}</option>
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('firstName')} *
-              </label>
-              <input
-                type="text"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {formData.type === 'NATURAL_PERSON' ? (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('civility')}
+                  </label>
+                  <select
+                    value={formData.civility}
+                    onChange={(e) => setFormData({ ...formData, civility: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">{t('selectCivility')}</option>
+                    <option value="M.">M.</option>
+                    <option value="Mme">Mme</option>
+                  </select>
+                </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('lastName')} *
-              </label>
-              <input
-                type="text"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('firstName')} *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('lastName')} *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </>
+            ) : formData.type === 'LEGAL_ENTITY' ? (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('companyName')} *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('siret')}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.siret}
+                    onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="mb-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    {t('managerSection')}
+                  </h3>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('managerName')}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.managerName}
+                      onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('managerEmail')}
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.managerEmail}
+                      onChange={(e) => setFormData({ ...formData, managerEmail: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('managerPhone')}
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.managerPhone}
+                      onChange={(e) => setFormData({ ...formData, managerPhone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : null}
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">

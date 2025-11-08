@@ -3,7 +3,7 @@ import { Money } from '../value-objects/Money';
 export interface LeaseProps {
   id: string;
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[];  // array of tenant IDs (supports multiple tenants)
   startDate: Date;
   endDate?: Date;
   rentAmount: Money;
@@ -24,6 +24,9 @@ export class Lease {
   }
 
   private validate(): void {
+    if (!this.props.tenantIds || this.props.tenantIds.length === 0) {
+      throw new Error('At least one tenant is required');
+    }
     if (this.props.paymentDueDay < 1 || this.props.paymentDueDay > 31) {
       throw new Error('Payment due day must be between 1 and 31');
     }
@@ -40,8 +43,13 @@ export class Lease {
     return this.props.propertyId;
   }
 
+  get tenantIds(): string[] {
+    return this.props.tenantIds;
+  }
+
+  // For backward compatibility - returns first tenant ID
   get tenantId(): string {
-    return this.props.tenantId;
+    return this.props.tenantIds[0];
   }
 
   get startDate(): Date {

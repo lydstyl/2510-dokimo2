@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ITenantRepository } from '../../use-cases/interfaces/ITenantRepository';
-import { Tenant } from '../../domain/entities/Tenant';
+import { Tenant, TenantType } from '../../domain/entities/Tenant';
 import { Email } from '../../domain/value-objects/Email';
 
 export class PrismaTenantRepository implements ITenantRepository {
@@ -18,7 +18,7 @@ export class PrismaTenantRepository implements ITenantRepository {
 
   async findAll(): Promise<Tenant[]> {
     const tenants = await this.prisma.tenant.findMany({
-      orderBy: { lastName: 'asc' },
+      orderBy: { firstName: 'asc' },
     });
 
     return tenants.map(tenant => this.toDomain(tenant));
@@ -28,11 +28,16 @@ export class PrismaTenantRepository implements ITenantRepository {
     const created = await this.prisma.tenant.create({
       data: {
         id: tenant.id,
+        type: tenant.type,
         civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
         phone: tenant.phone,
+        siret: tenant.siret,
+        managerName: tenant.managerName,
+        managerEmail: tenant.managerEmail?.getValue(),
+        managerPhone: tenant.managerPhone,
       },
     });
 
@@ -43,11 +48,16 @@ export class PrismaTenantRepository implements ITenantRepository {
     const updated = await this.prisma.tenant.update({
       where: { id: tenant.id },
       data: {
+        type: tenant.type,
         civility: tenant.civility,
         firstName: tenant.firstName,
         lastName: tenant.lastName,
         email: tenant.email?.getValue(),
         phone: tenant.phone,
+        siret: tenant.siret,
+        managerName: tenant.managerName,
+        managerEmail: tenant.managerEmail?.getValue(),
+        managerPhone: tenant.managerPhone,
       },
     });
 
@@ -63,11 +73,16 @@ export class PrismaTenantRepository implements ITenantRepository {
   private toDomain(raw: any): Tenant {
     return Tenant.create({
       id: raw.id,
+      type: raw.type as TenantType,
       civility: raw.civility,
       firstName: raw.firstName,
       lastName: raw.lastName,
       email: raw.email ? Email.create(raw.email) : undefined,
       phone: raw.phone,
+      siret: raw.siret,
+      managerName: raw.managerName,
+      managerEmail: raw.managerEmail ? Email.create(raw.managerEmail) : undefined,
+      managerPhone: raw.managerPhone,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });

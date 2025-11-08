@@ -84,39 +84,56 @@ model Property {
   @@index([buildingId])
 }
 
-// Tenant
+// Tenant - can be a natural person or legal entity
 model Tenant {
-  id        String   @id @default(cuid())
-  civility  String?  // "M." or "Mme" (Monsieur or Madame)
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  leases    Lease[]
+  id           String        @id @default(cuid())
+  type         String        @default("NATURAL_PERSON") // "NATURAL_PERSON" or "LEGAL_ENTITY"
+  civility     String?       // "M." or "Mme" (for natural persons)
+  firstName    String        // for natural persons, or company name for legal entities
+  lastName     String        @default("") // for natural persons, empty for legal entities
+  email        String?
+  phone        String?
+  siret        String?       // for legal entities
+  managerName  String?       // for legal entities - name of the manager
+  managerEmail String?       // for legal entities - manager's email
+  managerPhone String?       // for legal entities - manager's phone
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  leaseTenants LeaseTenant[]
 }
 
-// Lease - links property and tenant
+// Lease - links property and tenants (can have multiple tenants)
 model Lease {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   propertyId    String
-  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  tenantId      String
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property      Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   startDate     DateTime
   endDate       DateTime?
-  rentAmount    Float     // rent excluding charges
-  chargesAmount Float     // charges
-  paymentDueDay Int       // day of month when payment is due (1-31)
-  irlQuarter    String?   // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  rentAmount    Float          // rent excluding charges
+  chargesAmount Float          // charges
+  paymentDueDay Int            // day of month when payment is due (1-31)
+  irlQuarter    String?        // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tenants       LeaseTenant[]
   payments      Payment[]
   rentRevisions RentRevision[]
   inventories   Inventory[]
 
   @@index([propertyId])
+}
+
+// LeaseTenant - junction table for many-to-many relationship between Lease and Tenant
+model LeaseTenant {
+  id        String   @id @default(cuid())
+  leaseId   String
+  lease     Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([leaseId, tenantId]) // prevent duplicate tenant on same lease
+  @@index([leaseId])
   @@index([tenantId])
 }
 
