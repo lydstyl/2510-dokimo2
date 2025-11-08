@@ -37,12 +37,13 @@ export class GetLeaseRentHistory {
       const monthDate = new Date(`${month}-01`);
 
       // Find the most recent revision that is effective for this month
+      // Revisions are ordered by effectiveDate ascending, so we need to find
+      // the last one that is effective for this month
       let applicableRevision = null;
       for (const revision of revisions) {
         if (revision.isEffectiveForMonth(monthDate)) {
           applicableRevision = revision;
-        } else {
-          break; // Revisions are ordered, so we can stop here
+          // Continue to find the most recent effective revision
         }
       }
 
@@ -68,14 +69,25 @@ export class GetLeaseRentHistory {
 
   private generateMonthList(startMonth: string, endMonth: string): string[] {
     const months: string[] = [];
-    const start = new Date(`${startMonth}-01`);
-    const end = new Date(`${endMonth}-01`);
 
-    const current = new Date(start);
-    while (current <= end) {
-      const yearMonth = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+    // Parse start and end months (YYYY-MM format)
+    const [startYear, startMonthNum] = startMonth.split('-').map(Number);
+    const [endYear, endMonthNum] = endMonth.split('-').map(Number);
+
+    // Use UTC to avoid DST issues
+    const start = Date.UTC(startYear, startMonthNum - 1, 1);
+    const end = Date.UTC(endYear, endMonthNum - 1, 1);
+
+    let currentTimestamp = start;
+    while (currentTimestamp <= end) {
+      const currentDate = new Date(currentTimestamp);
+      const yearMonth = `${currentDate.getUTCFullYear()}-${String(currentDate.getUTCMonth() + 1).padStart(2, '0')}`;
       months.push(yearMonth);
-      current.setMonth(current.getMonth() + 1);
+
+      // Move to next month using UTC to avoid DST issues
+      const nextYear = currentDate.getUTCFullYear();
+      const nextMonth = currentDate.getUTCMonth() + 1;
+      currentTimestamp = Date.UTC(nextYear, nextMonth, 1);
     }
 
     return months;
