@@ -89,8 +89,8 @@ export async function PATCH(
       rentAmount: Number(rentAmount),
       chargesAmount: Number(chargesAmount),
       paymentDueDay: Number(paymentDueDay),
-      irlQuarter: irlQuarter || undefined,
-      note: note || null,
+      irlQuarter: irlQuarter === '' ? null : irlQuarter,
+      note: note === '' ? null : note,
     });
 
     return NextResponse.json({

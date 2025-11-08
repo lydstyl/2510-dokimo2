@@ -133,8 +133,8 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             rentAmount: parseFloat(formData.rentAmount),
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
-            irlQuarter: formData.irlQuarter || undefined,
-            note: formData.note || null,
+            irlQuarter: formData.irlQuarter === '' ? null : formData.irlQuarter,
+            note: formData.note === '' ? null : formData.note,
           }),
         });
 
@@ -156,8 +156,8 @@ export function LeaseModal({ isOpen, onClose, onSave, lease, mode, properties, t
             rentAmount: parseFloat(formData.rentAmount),
             chargesAmount: parseFloat(formData.chargesAmount),
             paymentDueDay: parseInt(formData.paymentDueDay, 10),
-            irlQuarter: formData.irlQuarter || undefined,
-            note: formData.note || null,
+            irlQuarter: formData.irlQuarter === '' ? null : formData.irlQuarter,
+            note: formData.note === '' ? null : formData.note,
           }),
         });
 
