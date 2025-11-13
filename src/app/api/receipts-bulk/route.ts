@@ -5,6 +5,7 @@ import { PdfReceiptGenerator } from '@/features/receipt/infrastructure/PdfReceip
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
+import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
 import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
 import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
 import JSZip from 'jszip';
@@ -45,11 +46,13 @@ export async function GET(request: NextRequest) {
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
+    const chargeRepo = new PrismaChargeRepository(prisma);
     const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
     const calculateBalance = new CalculateLeaseBalance(
       rentRevisionRepo,
       leaseRepo,
-      paymentRepo
+      paymentRepo,
+      chargeRepo
     );
 
     // Fetch all active leases for the user
@@ -236,18 +239,42 @@ export async function GET(request: NextRequest) {
           break;
       }
 
-      // Get first tenant's last name (sanitize for filename)
-      const firstTenantLastName = lease.tenants[0]?.tenant.lastName || 'locataire';
-      const sanitizedLastName = firstTenantLastName
+      // Get tenant name - use firstName + lastName for natural persons, or just firstName for legal entities
+      const firstTenant = lease.tenants[0]?.tenant;
+      let tenantName = 'LOCATAIRE';
+
+      if (firstTenant) {
+        // For legal entities: company name is stored in firstName (lastName is empty)
+        // For natural persons: use full name
+        if (firstTenant.type === 'LEGAL_ENTITY') {
+          tenantName = firstTenant.firstName; // Company name is in firstName for legal entities
+        } else {
+          tenantName = `${firstTenant.firstName}_${firstTenant.lastName}`;
+        }
+      }
+
+      const sanitizedTenantName = tenantName
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-zA-Z0-9]/g, '_')   // Replace special chars with underscore
+        .replace(/[^a-zA-Z0-9_]/g, '_')   // Replace special chars with underscore
+        .replace(/_+/g, '_')              // Replace multiple underscores with single
         .toUpperCase();
 
-      const filename = `${year}_${String(monthNum).padStart(2, '0')}_${filenamePart}_${sanitizedLastName}.pdf`;
+      const filename = `${year}_${String(monthNum).padStart(2, '0')}_${filenamePart}_${sanitizedTenantName}.pdf`;
+
+      // Organize by landlord folder
+      const landlordName = lease.property.landlord.name;
+      const sanitizedLandlordName = landlordName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-zA-Z0-9_]/g, '_')   // Replace special chars with underscore
+        .replace(/_+/g, '_')              // Replace multiple underscores with single
+        .toUpperCase();
+
+      const filePath = `${sanitizedLandlordName}/${filename}`;
 
       // Add to ZIP
-      zip.file(filename, pdfBuffer);
+      zip.file(filePath, pdfBuffer);
     }
 
     // Check if we have any files in the ZIP

@@ -5,6 +5,7 @@ import { PdfReceiptGenerator } from '@/features/receipt/infrastructure/PdfReceip
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
+import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
 import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
 import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
 
@@ -56,6 +57,7 @@ export async function GET(
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
+    const chargeRepo = new PrismaChargeRepository(prisma);
 
     const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
     const applicableRent = await getApplicableRent.execute(
@@ -63,20 +65,46 @@ export async function GET(
       new Date(payment.paymentDate)
     );
 
-    // Calculate balances correctly taking into account all rent revisions
+    // Calculate balances for the MONTH (same logic as HTML table)
+    // The table shows balance at start and end of month, not around individual payment
+    const paymentDate = new Date(payment.paymentDate);
+
     const calculateBalance = new CalculateLeaseBalance(
       rentRevisionRepo,
       leaseRepo,
-      paymentRepo
+      paymentRepo,
+      chargeRepo
     );
 
-    const balances = await calculateBalance.executeForPayment(
+    // Balance before = balance at end of previous month
+    const endOfPreviousMonth = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth(),
+      0,
+      23, 59, 59, 999
+    );
+
+    const previousMonthResult = await calculateBalance.execute(
       payment.leaseId,
-      payment.id
+      endOfPreviousMonth
     );
 
-    const balanceBefore = balances.balanceBefore;
-    const balanceAfter = balances.balanceAfter;
+    const balanceBefore = previousMonthResult.balance;
+
+    // Balance after = balance at end of current month
+    const endOfCurrentMonth = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth() + 1,
+      0,
+      23, 59, 59, 999
+    );
+
+    const currentMonthResult = await calculateBalance.execute(
+      payment.leaseId,
+      endOfCurrentMonth
+    );
+
+    const balanceAfter = currentMonthResult.balance;
 
     // Generate receipt number
     const receiptNumber = `REC-${payment.id.slice(0, 8).toUpperCase()}`;
@@ -129,7 +157,6 @@ export async function GET(
 
     // Generate filename based on receipt type and date
     // Format: AAAA_MM_<type>_<nom_locataire>.pdf
-    const paymentDate = new Date(payment.paymentDate);
     const year = paymentDate.getFullYear();
     const month = String(paymentDate.getMonth() + 1).padStart(2, '0');
 
@@ -149,15 +176,28 @@ export async function GET(
         break;
     }
 
-    // Get first tenant's last name (sanitize for filename)
-    const firstTenantLastName = payment.lease.tenants[0]?.tenant.lastName || 'locataire';
-    const sanitizedLastName = firstTenantLastName
+    // Get tenant name - use firstName + lastName for natural persons, or just firstName for legal entities
+    const firstTenant = payment.lease.tenants[0]?.tenant;
+    let tenantName = 'LOCATAIRE';
+
+    if (firstTenant) {
+      // For legal entities: company name is stored in firstName (lastName is empty)
+      // For natural persons: use full name
+      if (firstTenant.type === 'LEGAL_ENTITY') {
+        tenantName = firstTenant.firstName; // Company name is in firstName for legal entities
+      } else {
+        tenantName = `${firstTenant.firstName}_${firstTenant.lastName}`;
+      }
+    }
+
+    const sanitizedTenantName = tenantName
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove accents
-      .replace(/[^a-zA-Z0-9]/g, '_')   // Replace special chars with underscore
+      .replace(/[^a-zA-Z0-9_]/g, '_')   // Replace special chars with underscore
+      .replace(/_+/g, '_')              // Replace multiple underscores with single
       .toUpperCase();
 
-    const filename = `${year}_${month}_${filenamePart}_${sanitizedLastName}.pdf`;
+    const filename = `${year}_${month}_${filenamePart}_${sanitizedTenantName}.pdf`;
 
     // Return as PDF file (convert Uint8Array to Buffer for NextResponse)
     return new NextResponse(Buffer.from(pdfBuffer), {

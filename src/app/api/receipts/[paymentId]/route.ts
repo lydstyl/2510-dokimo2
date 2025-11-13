@@ -4,6 +4,7 @@ import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
+import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
 import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
 import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
 
@@ -55,6 +56,7 @@ export async function GET(
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
+    const chargeRepo = new PrismaChargeRepository(prisma);
 
     const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
     const applicableRent = await getApplicableRent.execute(
@@ -62,20 +64,46 @@ export async function GET(
       new Date(payment.paymentDate)
     );
 
-    // Calculate balances correctly taking into account all rent revisions
+    // Calculate balances for the MONTH (same logic as HTML table)
+    // The table shows balance at start and end of month, not around individual payment
+    const paymentDate = new Date(payment.paymentDate);
+
     const calculateBalance = new CalculateLeaseBalance(
       rentRevisionRepo,
       leaseRepo,
-      paymentRepo
+      paymentRepo,
+      chargeRepo
     );
 
-    const balances = await calculateBalance.executeForPayment(
+    // Balance before = balance at end of previous month
+    const endOfPreviousMonth = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth(),
+      0,
+      23, 59, 59, 999
+    );
+
+    const previousMonthResult = await calculateBalance.execute(
       payment.leaseId,
-      payment.id
+      endOfPreviousMonth
     );
 
-    const balanceBefore = balances.balanceBefore;
-    const balanceAfter = balances.balanceAfter;
+    const balanceBefore = previousMonthResult.balance;
+
+    // Balance after = balance at end of current month
+    const endOfCurrentMonth = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth() + 1,
+      0,
+      23, 59, 59, 999
+    );
+
+    const currentMonthResult = await calculateBalance.execute(
+      payment.leaseId,
+      endOfCurrentMonth
+    );
+
+    const balanceAfter = currentMonthResult.balance;
     const monthlyRent = applicableRent.totalAmount;
 
     // Generate receipt content with applicable rent amounts

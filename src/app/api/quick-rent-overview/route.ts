@@ -4,6 +4,7 @@ import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
+import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
 import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
 
 export async function GET(request: NextRequest) {
@@ -42,10 +43,12 @@ export async function GET(request: NextRequest) {
     const rentRevisionRepository = new PrismaRentRevisionRepository(prisma);
     const leaseRepository = new PrismaLeaseRepository(prisma);
     const paymentRepository = new PrismaPaymentRepository(prisma);
+    const chargeRepository = new PrismaChargeRepository(prisma);
     const calculateBalance = new CalculateLeaseBalance(
       rentRevisionRepository,
       leaseRepository,
-      paymentRepository
+      paymentRepository,
+      chargeRepository
     );
 
     // Calculate balance for each lease for current month

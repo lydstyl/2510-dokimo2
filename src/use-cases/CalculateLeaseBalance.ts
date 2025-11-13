@@ -1,22 +1,25 @@
 import { IRentRevisionRepository } from './interfaces/IRentRevisionRepository';
 import { ILeaseRepository } from './interfaces/ILeaseRepository';
 import { IPaymentRepository } from './interfaces/IPaymentRepository';
+import { IChargeRepository } from './interfaces/IChargeRepository';
 
 export interface BalanceCalculation {
   totalPaid: number;
   totalExpected: number;
+  totalCharges: number;
   balance: number;
 }
 
 /**
  * Use case: Calculate the balance for a lease at a specific date
- * Takes into account all rent revisions and payments up to that date
+ * Takes into account all rent revisions, payments, and additional charges up to that date
  */
 export class CalculateLeaseBalance {
   constructor(
     private rentRevisionRepository: IRentRevisionRepository,
     private leaseRepository: ILeaseRepository,
-    private paymentRepository: IPaymentRepository
+    private paymentRepository: IPaymentRepository,
+    private chargeRepository: IChargeRepository
   ) {}
 
   async execute(leaseId: string, upToDate: Date): Promise<BalanceCalculation> {
@@ -39,6 +42,15 @@ export class CalculateLeaseBalance {
     // Calculate total paid
     const totalPaid = payments.reduce((sum, payment) => {
       return sum + payment.amount.getValue();
+    }, 0);
+
+    // Get all additional charges up to the specified date
+    const allCharges = await this.chargeRepository.findByLeaseId(leaseId);
+    const chargesUpToDate = allCharges.filter(charge => charge.chargeDate <= upToDate);
+
+    // Calculate total additional charges
+    const totalCharges = chargesUpToDate.reduce((sum, charge) => {
+      return sum + charge.amount.getValue();
     }, 0);
 
     // Calculate total expected by iterating through each month
@@ -72,11 +84,14 @@ export class CalculateLeaseBalance {
       currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
 
-    const balance = totalPaid - totalExpected;
+    // Balance = totalPaid - (totalExpected + totalCharges)
+    // Negative balance means tenant owes money
+    const balance = totalPaid - totalExpected - totalCharges;
 
     return {
       totalPaid,
       totalExpected,
+      totalCharges,
       balance,
     };
   }
