@@ -65,6 +65,7 @@ export default function LeasesPage() {
   const [selectedLeaseForModal, setSelectedLeaseForModal] = useState<Lease | null>(null);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
   const [selectedLeaseForRevision, setSelectedLeaseForRevision] = useState<Lease | null>(null);
+  const [filterText, setFilterText] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -180,6 +181,29 @@ export default function LeasesPage() {
     fetchData();
   };
 
+  // Filter leases based on search text
+  const filteredLeases = leases.filter((lease) => {
+    if (!filterText.trim()) return true;
+
+    const searchText = filterText.toLowerCase();
+
+    // Search in property name
+    const propertyMatch = lease.property.name.toLowerCase().includes(searchText);
+
+    // Search in tenant names
+    const tenantMatch = lease.tenants.some(
+      (tenant) =>
+        tenant.firstName.toLowerCase().includes(searchText) ||
+        tenant.lastName.toLowerCase().includes(searchText) ||
+        `${tenant.firstName} ${tenant.lastName}`.toLowerCase().includes(searchText)
+    );
+
+    // Search in landlord name
+    const landlordMatch = lease.property.landlord.name.toLowerCase().includes(searchText);
+
+    return propertyMatch || tenantMatch || landlordMatch;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -215,13 +239,28 @@ export default function LeasesPage() {
             </button>
           </div>
 
+          {/* Search filter */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder={t('filter.placeholder')}
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
           {leases.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p>{t('emptyState')}</p>
             </div>
+          ) : filteredLeases.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>{t('filter.noResults')}</p>
+            </div>
           ) : (
             <div className="space-y-4">
-              {leases.map((lease) => {
+              {filteredLeases.map((lease) => {
                 const totalPaid = lease.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
                 // Use current rent amounts (most recent after revisions)
                 const currentRent = lease.currentRentAmount || lease.rentAmount;

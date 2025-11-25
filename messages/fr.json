@@ -233,6 +233,10 @@
     "heading": "Gérer les Baux",
     "addButton": "+ Créer un bail",
     "emptyState": "Aucun bail trouvé. Créez votre premier bail pour commencer.",
+    "filter": {
+      "placeholder": "Rechercher par bien, locataire ou propriétaire...",
+      "noResults": "Aucun bail ne correspond à votre recherche."
+    },
     "card": {
       "tenant": "Locataire",
       "landlord": "Propriétaire",
