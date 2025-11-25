@@ -465,6 +465,10 @@
       "title": "Vue d'ensemble des chaudières",
       "heading": "Toutes les chaudières",
       "export": "Exporter pour le plombier",
+      "exportSelected": "Exporter la sélection ({count})",
+      "selectAll": "Tout sélectionner",
+      "selectNone": "Tout désélectionner",
+      "noSelection": "Veuillez sélectionner au moins une chaudière",
       "emptyState": "Aucune chaudière enregistrée dans le système."
     }
   },

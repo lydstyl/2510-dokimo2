@@ -10,8 +10,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get all boilers with their property and latest maintenance
+    // Get selected boiler IDs from query params
+    const { searchParams } = new URL(request.url);
+    const idsParam = searchParams.get('ids');
+    const selectedIds = idsParam ? idsParam.split(',') : [];
+
+    // Build where clause
+    const whereClause = selectedIds.length > 0 ? { id: { in: selectedIds } } : {};
+
+    // Get boilers with their property and latest maintenance
     const boilers = await prisma.boiler.findMany({
+      where: whereClause,
       include: {
         property: {
           include: {

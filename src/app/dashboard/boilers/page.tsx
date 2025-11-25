@@ -42,6 +42,7 @@ export default function BoilersPage() {
 
   const [boilers, setBoilers] = useState<BoilerOverview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBoilers, setSelectedBoilers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchBoilers();
@@ -61,9 +62,35 @@ export default function BoilersPage() {
     }
   };
 
+  const toggleBoilerSelection = (boilerId: string) => {
+    setSelectedBoilers((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(boilerId)) {
+        newSet.delete(boilerId);
+      } else {
+        newSet.add(boilerId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedBoilers(new Set(boilers.map((b) => b.boiler.id)));
+  };
+
+  const handleSelectNone = () => {
+    setSelectedBoilers(new Set());
+  };
+
   const handleExport = async () => {
+    if (selectedBoilers.size === 0) {
+      alert(t('overview.noSelection'));
+      return;
+    }
+
     try {
-      const response = await fetch('/api/boilers/export');
+      const boilerIds = Array.from(selectedBoilers).join(',');
+      const response = await fetch(`/api/boilers/export?ids=${boilerIds}`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -108,12 +135,31 @@ export default function BoilersPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">{t('overview.heading')}</h2>
-            <button
-              onClick={handleExport}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-            >
-              {t('overview.export')}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSelectAll}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                {t('overview.selectAll')}
+              </button>
+              <button
+                onClick={handleSelectNone}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              >
+                {t('overview.selectNone')}
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={selectedBoilers.size === 0}
+                className={`px-4 py-2 rounded-md ${
+                  selectedBoilers.size === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {t('overview.exportSelected', { count: selectedBoilers.size })}
+              </button>
+            </div>
           </div>
 
           {boilers.length === 0 ? (
@@ -125,6 +171,14 @@ export default function BoilersPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        checked={boilers.length > 0 && selectedBoilers.size === boilers.length}
+                        onChange={(e) => e.target.checked ? handleSelectAll() : handleSelectNone()}
+                        className="h-4 w-4 text-blue-600 rounded cursor-pointer"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('table.property')}
                     </th>
@@ -157,6 +211,14 @@ export default function BoilersPage() {
                           isOverdue ? 'bg-red-50' : hasNoMaintenance ? 'bg-yellow-50' : ''
                         }`}
                       >
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedBoilers.has(item.boiler.id)}
+                            onChange={() => toggleBoilerSelection(item.boiler.id)}
+                            className="h-4 w-4 text-blue-600 rounded cursor-pointer"
+                          />
+                        </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">
                             {item.property.name}
