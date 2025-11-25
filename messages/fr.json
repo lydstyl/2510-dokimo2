@@ -67,6 +67,7 @@
       "month": "Mois",
       "rentDue": "Loyer dû",
       "amountPaid": "Montant payé",
+      "lastPayment": "Dernier paiement",
       "balanceBefore": "Dû avant",
       "balanceAfter": "Dû après",
       "receiptType": "Type de reçu",

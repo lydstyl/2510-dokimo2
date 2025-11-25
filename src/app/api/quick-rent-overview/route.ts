@@ -66,6 +66,9 @@ export async function GET(request: NextRequest) {
 
       const totalPaidThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0);
 
+      // Get the last payment (even if before current month)
+      const lastPayment = lease.payments.length > 0 ? lease.payments[0] : null;
+
       // Calculate balance before this month's payments
       // In CalculateLeaseBalance: balance = totalPaid - totalExpected
       // So: balance > 0 means overpaid, balance < 0 means underpaid
@@ -119,6 +122,10 @@ export async function GET(request: NextRequest) {
             paymentDate: p.paymentDate,
             notes: p.notes,
           })),
+          lastPayment: lastPayment ? {
+            amount: lastPayment.amount,
+            paymentDate: lastPayment.paymentDate,
+          } : null,
         });
       }
     }

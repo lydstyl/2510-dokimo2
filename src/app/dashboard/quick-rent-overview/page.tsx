@@ -27,6 +27,10 @@ interface RentRow {
     paymentDate: string;
     notes: string | null;
   }>;
+  lastPayment: {
+    amount: number;
+    paymentDate: string;
+  } | null;
 }
 
 export default function QuickRentOverviewPage() {
@@ -245,6 +249,9 @@ export default function QuickRentOverviewPage() {
                       {t('table.amountPaid')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('table.lastPayment')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('table.balanceBefore')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -274,6 +281,18 @@ export default function QuickRentOverviewPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">€{row.amountPaid.toFixed(2)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {row.lastPayment ? (
+                          <div className="text-sm">
+                            <div className="text-gray-900 font-medium">€{row.lastPayment.amount.toFixed(2)}</div>
+                            <div className="text-gray-500 text-xs">
+                              {new Date(row.lastPayment.paymentDate).toLocaleDateString('fr-FR')}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-400">-</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`text-sm font-medium ${row.balanceBefore < 0 ? 'text-red-600' : row.balanceBefore > 0 ? 'text-green-600' : 'text-gray-900'}`}>
