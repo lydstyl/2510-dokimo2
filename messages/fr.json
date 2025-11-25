@@ -365,6 +365,25 @@
       "descriptionPlaceholder": "Ex: Dépôt de garantie, Achat meuble, etc.",
       "cancel": "Annuler",
       "save": "Enregistrer"
+    },
+    "emailActions": {
+      "prepareEmailMailto": "📧 Ouvrir dans mon client email",
+      "prepareEmailModal": "📋 Copier le message email",
+      "emailPrepared": "Client email ouvert ! N'oubliez pas d'attacher le PDF téléchargé.",
+      "pdfDownloading": "Téléchargement du PDF..."
+    },
+    "emailModal": {
+      "title": "Email prêt à envoyer",
+      "recipient": "Destinataire (à copier)",
+      "subject": "Objet (à copier)",
+      "message": "Message (à copier)",
+      "copyButton": "📋 Copier",
+      "copied": "✓ Copié !",
+      "downloadPdf": "📥 Télécharger le PDF",
+      "close": "Fermer",
+      "noTenantEmail": "Aucun email pour ce locataire",
+      "instructions": "Copiez les informations ci-dessous et collez-les dans votre client email (Gmail, Outlook, etc.). N'oubliez pas d'attacher le PDF téléchargé.",
+      "emailBodyTemplate": "Bonjour {civility} {firstName} {lastName},\n\nVeuillez trouver ci-joint votre quittance de loyer pour le mois de {month}.\n\nCordialement"
     }
   },
   "common": {

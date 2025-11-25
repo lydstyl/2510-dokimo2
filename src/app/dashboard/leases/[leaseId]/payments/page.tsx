@@ -99,6 +99,15 @@ export default function LeasePaymentsPage() {
   const [chargeAmount, setChargeAmount] = useState('');
   const [chargeDate, setChargeDate] = useState('');
   const [chargeDescription, setChargeDescription] = useState('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailData, setEmailData] = useState<{
+    recipient: string;
+    subject: string;
+    body: string;
+    month: string;
+    receiptType: string;
+  } | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaseDetails();
@@ -785,6 +794,89 @@ Document généré automatiquement par le système de gestion locative.
     }
   };
 
+  const handlePrepareEmailMailto = async (month: string, receiptType: string) => {
+    if (!lease) return;
+
+    const monthRow = monthlyRows.find(r => r.month === month);
+    if (!monthRow) return;
+
+    // Check if tenant has email
+    const tenant = lease.tenants && lease.tenants.length > 0 ? lease.tenants[0] : null;
+    if (!tenant || !tenant.email) {
+      alert(t('emailModal.noTenantEmail'));
+      return;
+    }
+
+    // Download PDF first
+    await handleDownloadReceiptPdf(month, receiptType);
+
+    // Prepare email content
+    const civility = tenant.civility || '';
+    const subject = `Quittance de loyer - ${monthRow.monthLabel}`;
+    const body = t('emailModal.emailBodyTemplate', {
+      civility,
+      firstName: tenant.firstName,
+      lastName: PhoneNumber.formatLastName(tenant.lastName),
+      month: monthRow.monthLabel,
+    });
+
+    // Open email client with mailto link
+    // Note: We send to ourselves (user email), not to the tenant
+    // The user will forward it to the tenant
+    const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
+
+    // Show notification
+    setTimeout(() => {
+      alert(t('emailActions.emailPrepared'));
+    }, 500);
+  };
+
+  const handlePrepareEmailModal = async (month: string, receiptType: string) => {
+    if (!lease) return;
+
+    const monthRow = monthlyRows.find(r => r.month === month);
+    if (!monthRow) return;
+
+    // Check if tenant has email
+    const tenant = lease.tenants && lease.tenants.length > 0 ? lease.tenants[0] : null;
+    if (!tenant || !tenant.email) {
+      alert(t('emailModal.noTenantEmail'));
+      return;
+    }
+
+    // Prepare email content
+    const civility = tenant.civility || '';
+    const subject = `Quittance de loyer - ${monthRow.monthLabel}`;
+    const body = t('emailModal.emailBodyTemplate', {
+      civility,
+      firstName: tenant.firstName,
+      lastName: PhoneNumber.formatLastName(tenant.lastName),
+      month: monthRow.monthLabel,
+    });
+
+    // Set email data and show modal
+    setEmailData({
+      recipient: tenant.email,
+      subject,
+      body,
+      month,
+      receiptType,
+    });
+    setShowEmailModal(true);
+  };
+
+  const handleCopyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      alert('Erreur lors de la copie');
+    }
+  };
+
   const handleDownloadReceipt = async (month: string, receiptType: string) => {
     if (!lease) return;
 
@@ -1285,7 +1377,7 @@ prochain loyer ou remboursé selon accord entre les parties.
                             Télécharger ▼
                           </button>
                           {activeDropdown === row.month && (
-                            <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="absolute right-0 z-10 mt-2 w-64 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                               <div className="py-1">
                                 <button
                                   onClick={() => {
@@ -1304,6 +1396,25 @@ prochain loyer ou remboursé selon accord entre les parties.
                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
                                   📕 Format PDF
+                                </button>
+                                <div className="border-t border-gray-200 my-1"></div>
+                                <button
+                                  onClick={() => {
+                                    handlePrepareEmailMailto(row.month, row.receiptType);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  {t('emailActions.prepareEmailMailto')}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handlePrepareEmailModal(row.month, row.receiptType);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  {t('emailActions.prepareEmailModal')}
                                 </button>
                               </div>
                             </div>
@@ -1643,6 +1754,118 @@ prochain loyer ou remboursé selon accord entre les parties.
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Modal */}
+      {showEmailModal && emailData && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">{t('emailModal.title')}</h3>
+              <button
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailData(null);
+                  setCopiedField(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                {t('emailModal.instructions')}
+              </p>
+            </div>
+
+            {/* Recipient */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('emailModal.recipient')}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={emailData.recipient}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 font-mono text-sm"
+                />
+                <button
+                  onClick={() => handleCopyToClipboard(emailData.recipient, 'recipient')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
+                >
+                  {copiedField === 'recipient' ? t('emailModal.copied') : t('emailModal.copyButton')}
+                </button>
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('emailModal.subject')}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={emailData.subject}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 text-sm"
+                />
+                <button
+                  onClick={() => handleCopyToClipboard(emailData.subject, 'subject')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
+                >
+                  {copiedField === 'subject' ? t('emailModal.copied') : t('emailModal.copyButton')}
+                </button>
+              </div>
+            </div>
+
+            {/* Message Body */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('emailModal.message')}
+              </label>
+              <div className="flex flex-col gap-2">
+                <textarea
+                  value={emailData.body}
+                  readOnly
+                  rows={6}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 text-sm resize-none"
+                />
+                <button
+                  onClick={() => handleCopyToClipboard(emailData.body, 'body')}
+                  className="self-end px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
+                >
+                  {copiedField === 'body' ? t('emailModal.copied') : t('emailModal.copyButton')}
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+              <button
+                onClick={async () => {
+                  await handleDownloadReceiptPdf(emailData.month, emailData.receiptType);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+              >
+                {t('emailModal.downloadPdf')}
+              </button>
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailData(null);
+                  setCopiedField(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                {t('emailModal.close')}
               </button>
             </div>
           </div>
