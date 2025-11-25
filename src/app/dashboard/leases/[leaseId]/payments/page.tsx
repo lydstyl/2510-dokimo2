@@ -821,9 +821,8 @@ Document généré automatiquement par le système de gestion locative.
     });
 
     // Open email client with mailto link
-    // Note: We send to ourselves (user email), not to the tenant
-    // The user will forward it to the tenant
-    const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // Send to tenant's email
+    const mailtoLink = `mailto:${encodeURIComponent(tenant.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink, '_blank');
 
     // Show notification
