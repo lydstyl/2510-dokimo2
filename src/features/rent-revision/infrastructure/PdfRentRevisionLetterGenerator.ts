@@ -99,16 +99,18 @@ export class PdfRentRevisionLetterGenerator {
 
   private addTenantAddress(pdf: jsPDF, data: RentRevisionLetterData, y: number): number {
     pdf.setFontSize(11);
-    pdf.text(`${data.tenant.firstName} ${data.tenant.lastName}`, this.MARGIN_LEFT, y);
+    const rightMargin = this.PAGE_WIDTH - this.MARGIN_RIGHT;
+
+    pdf.text(`${data.tenant.firstName} ${data.tenant.lastName}`, rightMargin, y, { align: 'right' });
     y += this.LINE_HEIGHT;
 
-    pdf.text(data.property.name, this.MARGIN_LEFT, y);
+    pdf.text(data.property.name, rightMargin, y, { align: 'right' });
     y += this.LINE_HEIGHT;
 
-    pdf.text(data.property.address, this.MARGIN_LEFT, y);
+    pdf.text(data.property.address, rightMargin, y, { align: 'right' });
     y += this.LINE_HEIGHT;
 
-    pdf.text(`${data.property.postalCode} ${data.property.city}`, this.MARGIN_LEFT, y);
+    pdf.text(`${data.property.postalCode} ${data.property.city}`, rightMargin, y, { align: 'right' });
     y += this.LINE_HEIGHT;
 
     return y;
@@ -116,11 +118,11 @@ export class PdfRentRevisionLetterGenerator {
 
   private addDateAndPlace(pdf: jsPDF, data: RentRevisionLetterData, y: number): number {
     pdf.setFontSize(11);
-    const cityName = data.property.city.charAt(0).toUpperCase() + data.property.city.slice(1).toLowerCase();
+    const rightMargin = this.PAGE_WIDTH - this.MARGIN_RIGHT;
     const dateStr = data.revision.date.toLocaleDateString('fr-FR');
-    const dateLine = `à ${cityName}, le ${dateStr}`;
+    const dateLine = `le ${dateStr}`;
 
-    pdf.text(dateLine, this.MARGIN_LEFT, y);
+    pdf.text(dateLine, rightMargin, y, { align: 'right' });
     y += this.LINE_HEIGHT;
 
     return y;
@@ -214,7 +216,8 @@ export class PdfRentRevisionLetterGenerator {
     const signature = data.landlord.managerName
       ? `${data.landlord.managerName}, gérant de ${data.landlord.name}`
       : data.landlord.name;
-    pdf.text(signature, this.MARGIN_LEFT, y);
+    const centerX = this.PAGE_WIDTH / 2;
+    pdf.text(signature, centerX, y, { align: 'center' });
 
     return y;
   }
