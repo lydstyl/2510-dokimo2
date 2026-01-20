@@ -99,18 +99,18 @@ export class PdfRentRevisionLetterGenerator {
 
   private addTenantAddress(pdf: jsPDF, data: RentRevisionLetterData, y: number): number {
     pdf.setFontSize(11);
-    const rightMargin = this.PAGE_WIDTH - this.MARGIN_RIGHT;
+    const rightBlockStart = 154; // Position X to start the block on the right side (110 * 1.4)
 
-    pdf.text(`${data.tenant.firstName} ${data.tenant.lastName}`, rightMargin, y, { align: 'right' });
+    pdf.text(`${data.tenant.firstName} ${data.tenant.lastName}`, rightBlockStart, y);
     y += this.LINE_HEIGHT;
 
-    pdf.text(data.property.name, rightMargin, y, { align: 'right' });
+    pdf.text(data.property.name, rightBlockStart, y);
     y += this.LINE_HEIGHT;
 
-    pdf.text(data.property.address, rightMargin, y, { align: 'right' });
+    pdf.text(data.property.address, rightBlockStart, y);
     y += this.LINE_HEIGHT;
 
-    pdf.text(`${data.property.postalCode} ${data.property.city}`, rightMargin, y, { align: 'right' });
+    pdf.text(`${data.property.postalCode} ${data.property.city}`, rightBlockStart, y);
     y += this.LINE_HEIGHT;
 
     return y;
@@ -118,11 +118,11 @@ export class PdfRentRevisionLetterGenerator {
 
   private addDateAndPlace(pdf: jsPDF, data: RentRevisionLetterData, y: number): number {
     pdf.setFontSize(11);
-    const rightMargin = this.PAGE_WIDTH - this.MARGIN_RIGHT;
+    const rightBlockStart = 154; // Same position as tenant address block (110 * 1.4)
     const dateStr = data.revision.date.toLocaleDateString('fr-FR');
     const dateLine = `le ${dateStr}`;
 
-    pdf.text(dateLine, rightMargin, y, { align: 'right' });
+    pdf.text(dateLine, rightBlockStart, y);
     y += this.LINE_HEIGHT;
 
     return y;
