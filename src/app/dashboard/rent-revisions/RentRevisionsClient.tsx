@@ -91,6 +91,99 @@ export function RentRevisionsClient() {
     }
   };
 
+  const handleRevertToPreparation = async (id: string) => {
+    if (!confirm(t('confirmRevert'))) return;
+
+    try {
+      const response = await fetch(`/api/rent-revisions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revertToPreparation: true }),
+      });
+
+      if (response.ok) {
+        await fetchRevisions();
+      }
+    } catch (error) {
+      console.error('Error reverting revision:', error);
+      alert('Erreur lors de la remise en préparation');
+    }
+  };
+
+  const handleDownloadLetter = async (revision: Revision, format: 'txt' | 'pdf') => {
+    try {
+      const response = await fetch(`/api/rent-revisions/${revision.id}`);
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des données');
+      }
+
+      const data = await response.json();
+      if (!data.lease) {
+        throw new Error('Données du bail introuvables');
+      }
+
+      const tenant = data.lease.tenants[0]?.tenant;
+      if (!tenant) {
+        throw new Error('Locataire introuvable');
+      }
+
+      const tenantFullName = `${tenant.firstName} ${tenant.lastName}`;
+      const propertyFullAddress = `${data.lease.property.address}, ${data.lease.property.postalCode} ${data.lease.property.city}`;
+
+      // Extract IRL indices from reason
+      let oldIndex = '';
+      let newIndex = '';
+      let quarter = '';
+
+      if (data.reason) {
+        const irlMatch = data.reason.match(/Ancien:\s*([\d.]+),\s*Nouveau:\s*([\d.]+)/);
+        if (irlMatch) {
+          oldIndex = irlMatch[1];
+          newIndex = irlMatch[2];
+        }
+
+        const quarterMatch = data.reason.match(/Révision IRL\s+(.+?)\s+-/);
+        if (quarterMatch) {
+          quarter = quarterMatch[1];
+        }
+      }
+
+      // Get effective month from date
+      const effectiveDate = new Date(data.effectiveDate);
+      const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      const effectiveMonth = `${monthNames[effectiveDate.getMonth()]} ${effectiveDate.getFullYear()}`;
+
+      const letterData = {
+        landlordName: data.lease.property.landlord.name,
+        landlordAddress: data.lease.property.landlord.address,
+        tenantCivility: tenant.civility || 'Madame, Monsieur',
+        tenantName: tenantFullName,
+        tenantAddress: propertyFullAddress,
+        propertyAddress: propertyFullAddress,
+        letterDate: new Date().toISOString().split('T')[0],
+        oldIndex,
+        newIndex,
+        irlQuarter: quarter,
+        oldRent: data.lease.rentAmount,
+        newRent: data.rentAmount,
+        oldCharges: data.lease.chargesAmount,
+        newCharges: data.chargesAmount,
+        effectiveMonth,
+      };
+
+      if (format === 'txt') {
+        const { RentRevisionLetterGenerator } = await import('@/features/rent-revision/presentation/RentRevisionLetterGenerator');
+        RentRevisionLetterGenerator.downloadTxtLetter(letterData);
+      } else if (format === 'pdf') {
+        const { RentRevisionLetterGenerator } = await import('@/features/rent-revision/presentation/RentRevisionLetterGenerator');
+        await RentRevisionLetterGenerator.downloadPdfLetter(letterData);
+      }
+    } catch (error) {
+      console.error('Error generating letter:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la génération du courrier');
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -127,6 +220,8 @@ export function RentRevisionsClient() {
               variant="urgent"
               onMarkAsSent={handleMarkAsSent}
               onDelete={handleDelete}
+              onRevertToPreparation={handleRevertToPreparation}
+              onDownloadLetter={handleDownloadLetter}
             />
           </div>
         </section>
@@ -144,6 +239,8 @@ export function RentRevisionsClient() {
               variant="preparation"
               onMarkAsSent={handleMarkAsSent}
               onDelete={handleDelete}
+              onRevertToPreparation={handleRevertToPreparation}
+              onDownloadLetter={handleDownloadLetter}
             />
           </div>
         </section>
@@ -161,6 +258,8 @@ export function RentRevisionsClient() {
               variant="sent"
               onMarkAsSent={handleMarkAsSent}
               onDelete={handleDelete}
+              onRevertToPreparation={handleRevertToPreparation}
+              onDownloadLetter={handleDownloadLetter}
             />
           </div>
         </section>
@@ -182,9 +281,11 @@ interface RevisionTableProps {
   variant: 'urgent' | 'preparation' | 'sent';
   onMarkAsSent: (id: string) => void;
   onDelete: (id: string) => void;
+  onRevertToPreparation: (id: string) => void;
+  onDownloadLetter: (revision: Revision, format: 'txt' | 'pdf') => void;
 }
 
-function RevisionTable({ revisions, variant, onMarkAsSent, onDelete }: RevisionTableProps) {
+function RevisionTable({ revisions, variant, onMarkAsSent, onDelete, onRevertToPreparation, onDownloadLetter }: RevisionTableProps) {
   const t = useTranslations('rentRevisions');
 
   const bgClass = variant === 'urgent' ? 'bg-red-50' : variant === 'preparation' ? 'bg-orange-50' : '';
@@ -198,9 +299,7 @@ function RevisionTable({ revisions, variant, onMarkAsSent, onDelete }: RevisionT
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('effectiveDate')}</th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('newRent')}</th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reason')}</th>
-          {variant !== 'sent' && (
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
-          )}
+          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-200">
@@ -233,24 +332,66 @@ function RevisionTable({ revisions, variant, onMarkAsSent, onDelete }: RevisionT
             <td className="px-6 py-4 text-sm text-gray-600">
               {revision.reason || '-'}
             </td>
-            {variant !== 'sent' && (
-              <td className="px-6 py-4 text-right text-sm space-x-2">
-                <button
-                  onClick={() => onMarkAsSent(revision.id)}
-                  className="text-green-600 hover:text-green-800 font-medium"
-                  title={t('markSent')}
-                >
-                  ✉️
-                </button>
-                <button
-                  onClick={() => onDelete(revision.id)}
-                  className="text-red-600 hover:text-red-800 font-medium"
-                  title={t('delete')}
-                >
-                  🗑️
-                </button>
-              </td>
-            )}
+            <td className="px-6 py-4 text-right text-sm space-x-2">
+              {variant !== 'sent' ? (
+                <>
+                  {/* EN_PREPARATION actions */}
+                  <a
+                    href={`/dashboard/rent-revisions/${revision.id}/edit`}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                    title={t('edit')}
+                  >
+                    ✏️
+                  </a>
+                  <button
+                    onClick={() => onMarkAsSent(revision.id)}
+                    className="text-green-600 hover:text-green-800 font-medium"
+                    title={t('markSent')}
+                  >
+                    ✉️
+                  </button>
+                  <button
+                    onClick={() => onDelete(revision.id)}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                    title={t('delete')}
+                  >
+                    🗑️
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* COURRIER_AR_ENVOYE actions */}
+                  <button
+                    onClick={() => onDownloadLetter(revision, 'txt')}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                    title={t('downloadTxt')}
+                  >
+                    📄
+                  </button>
+                  <button
+                    onClick={() => onDownloadLetter(revision, 'pdf')}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                    title={t('downloadPdf')}
+                  >
+                    📕
+                  </button>
+                  <button
+                    onClick={() => onRevertToPreparation(revision.id)}
+                    className="text-orange-600 hover:text-orange-800 font-medium"
+                    title={t('revertToPreparation')}
+                  >
+                    ↩️
+                  </button>
+                  <button
+                    onClick={() => onDelete(revision.id)}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                    title={t('delete')}
+                  >
+                    🗑️
+                  </button>
+                </>
+              )}
+            </td>
           </tr>
         ))}
       </tbody>

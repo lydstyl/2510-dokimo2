@@ -601,8 +601,12 @@
     "generateTxt": "TXT",
     "generatePdf": "PDF",
     "delete": "Supprimer",
+    "downloadTxt": "Télécharger TXT",
+    "downloadPdf": "Télécharger PDF",
+    "revertToPreparation": "Remettre en préparation",
     "confirmMarkSent": "Marquer cette révision comme envoyée par AR ?",
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette révision ?",
+    "confirmRevert": "Remettre cette révision en préparation ?",
     "status": {
       "enPreparation": "En préparation",
       "courrierArEnvoye": "Courrier AR envoyé",

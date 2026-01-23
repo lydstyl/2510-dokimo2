@@ -5,6 +5,91 @@ import { PrismaRentRevisionRepository } from '@/features/rent-revision/infrastru
 import { UpdateRentRevision } from '@/features/rent-revision/application/UpdateRentRevision';
 import { DeleteRentRevision } from '@/features/rent-revision/application/DeleteRentRevision';
 import { MarkRevisionAsLetterSent } from '@/features/rent-revision/application/MarkRevisionAsLetterSent';
+import { RevertRevisionToPreparation } from '@/features/rent-revision/application/RevertRevisionToPreparation';
+
+/**
+ * GET /api/rent-revisions/[id]
+ * Get a single rent revision with lease details
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { id } = await params;
+    const repository = new PrismaRentRevisionRepository(prisma);
+    const revision = await repository.findById(id);
+
+    if (!revision) {
+      return NextResponse.json({ error: 'Revision not found' }, { status: 404 });
+    }
+
+    // Include lease details
+    const lease = await prisma.lease.findUnique({
+      where: { id: revision.leaseId },
+      include: {
+        property: {
+          include: {
+            landlord: true,
+          },
+        },
+        tenants: {
+          include: {
+            tenant: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      id: revision.id,
+      leaseId: revision.leaseId,
+      effectiveDate: revision.effectiveDate.toISOString(),
+      rentAmount: revision.rentAmount.getValue(),
+      chargesAmount: revision.chargesAmount.getValue(),
+      totalAmount: revision.totalAmount().getValue(),
+      reason: revision.reason,
+      status: revision.status,
+      createdAt: revision.createdAt.toISOString(),
+      updatedAt: revision.updatedAt.toISOString(),
+      lease: lease
+        ? {
+            id: lease.id,
+            rentAmount: lease.rentAmount,
+            chargesAmount: lease.chargesAmount,
+            property: {
+              name: lease.property.name,
+              address: lease.property.address,
+              postalCode: lease.property.postalCode,
+              city: lease.property.city,
+              landlord: {
+                name: lease.property.landlord.name,
+                address: lease.property.landlord.address,
+              },
+            },
+            tenants: lease.tenants.map((lt) => ({
+              tenant: {
+                civility: lt.tenant.civility,
+                firstName: lt.tenant.firstName,
+                lastName: lt.tenant.lastName,
+              },
+            })),
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error('Error fetching rent revision:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * PATCH /api/rent-revisions/[id]
@@ -22,9 +107,21 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { effectiveDate, rentAmount, chargesAmount, reason, markAsLetterSent } = body;
+    const { effectiveDate, rentAmount, chargesAmount, reason, markAsLetterSent, revertToPreparation } = body;
 
     const repository = new PrismaRentRevisionRepository(prisma);
+
+    // If reverting to preparation
+    if (revertToPreparation) {
+      const useCase = new RevertRevisionToPreparation(repository);
+      const revision = await useCase.execute(id);
+
+      return NextResponse.json({
+        id: revision.id,
+        status: revision.status,
+        updatedAt: revision.updatedAt.toISOString(),
+      });
+    }
 
     // If marking letter as sent
     if (markAsLetterSent) {

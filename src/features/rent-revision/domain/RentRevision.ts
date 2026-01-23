@@ -145,6 +145,19 @@ export class RentRevision {
   }
 
   /**
+   * Mark revision back to preparation (from sent status)
+   * Returns a new instance with EN_PREPARATION status
+   * Useful for reusing a sent revision for next year
+   */
+  markBackToPreparation(): RentRevision {
+    return new RentRevision({
+      ...this,
+      status: RentRevisionStatus.EN_PREPARATION,
+      updatedAt: new Date(),
+    });
+  }
+
+  /**
    * Cancel revision
    * Returns a new instance with cancelled status
    */
