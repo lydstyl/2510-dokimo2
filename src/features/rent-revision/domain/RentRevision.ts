@@ -69,12 +69,14 @@ export class RentRevision {
     }
 
     // Validate effective date is not in the past (only for new revisions)
+    // We compare dates without time to allow today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const effectiveDate = new Date(props.effectiveDate);
     effectiveDate.setHours(0, 0, 0, 0);
 
-    if (effectiveDate < today) {
+    // Allow today and future dates, reject only past dates
+    if (effectiveDate.getTime() < today.getTime()) {
       throw new Error('Effective date cannot be in the past');
     }
 

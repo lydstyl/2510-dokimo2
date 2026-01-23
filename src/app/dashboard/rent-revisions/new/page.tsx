@@ -19,9 +19,11 @@ interface Lease {
     };
   };
   tenants: Array<{
-    civility?: string;
-    firstName: string;
-    lastName: string;
+    tenant: {
+      civility?: string;
+      firstName: string;
+      lastName: string;
+    };
   }>;
   rentAmount: number;
   chargesAmount: number;
@@ -110,7 +112,7 @@ export default function NewRentRevisionPage() {
     setSaving(true);
 
     try {
-      // Parse effective month (format: "février 2026" -> first day of month)
+      // Parse effective month (format: "février 2026" -> first day of month in UTC)
       const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
       const parts = effectiveMonth.trim().split(' ');
 
@@ -119,7 +121,8 @@ export default function NewRentRevisionPage() {
         const monthIndex = monthNames.findIndex(m => m.toLowerCase() === parts[0].toLowerCase());
         const year = parseInt(parts[1]);
         if (monthIndex >= 0 && year > 2000) {
-          effectiveDate = new Date(year, monthIndex, 1);
+          // Create date in UTC to avoid timezone issues
+          effectiveDate = new Date(Date.UTC(year, monthIndex, 1, 12, 0, 0));
         } else {
           alert('Format du mois invalide. Utilisez le format: février 2026');
           setSaving(false);
@@ -172,7 +175,9 @@ export default function NewRentRevisionPage() {
   const generateLetter = async (format: 'txt' | 'pdf', revisionId: string) => {
     if (!selectedLease || !calculatedRent || !newChargesAmount) return;
 
-    const tenant = selectedLease.tenants[0];
+    const tenant = selectedLease.tenants[0]?.tenant;
+    if (!tenant) return;
+
     const tenantFullName = `${tenant.firstName} ${tenant.lastName}`;
     const propertyFullAddress = `${selectedLease.property.address}, ${selectedLease.property.postalCode} ${selectedLease.property.city}`;
 
@@ -241,7 +246,7 @@ export default function NewRentRevisionPage() {
               <option value="">{t('selectLeasePlaceholder')}</option>
               {leases.map((lease) => (
                 <option key={lease.id} value={lease.id}>
-                  {lease.property.name} - {lease.tenants.map(t => `${t.firstName} ${t.lastName}`).join(', ')}
+                  {lease.property.name} - {lease.tenants.map(t => `${t.tenant.firstName} ${t.tenant.lastName}`).join(', ')}
                 </option>
               ))}
             </select>
