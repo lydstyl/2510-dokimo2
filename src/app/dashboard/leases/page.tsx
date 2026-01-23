@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { LeaseModal } from '@/components/LeaseModal';
-import { RentRevisionLetterModal } from '@/components/RentRevisionLetterModal';
 
 interface Landlord {
   id: string;
@@ -63,8 +62,6 @@ export default function LeasesPage() {
   const [isLeaseModalOpen, setIsLeaseModalOpen] = useState(false);
   const [leaseModalMode, setLeaseModalMode] = useState<'add' | 'edit' | 'delete'>('add');
   const [selectedLeaseForModal, setSelectedLeaseForModal] = useState<Lease | null>(null);
-  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
-  const [selectedLeaseForRevision, setSelectedLeaseForRevision] = useState<Lease | null>(null);
   const [filterText, setFilterText] = useState('');
 
   useEffect(() => {
@@ -372,15 +369,6 @@ export default function LeasesPage() {
                         {t('actions.viewHistory')}
                       </a>
                       <button
-                        onClick={() => {
-                          setSelectedLeaseForRevision(lease);
-                          setIsRevisionModalOpen(true);
-                        }}
-                        className="text-sm text-purple-600 hover:text-purple-900 font-medium"
-                      >
-                        📝 Révision loyer
-                      </button>
-                      <button
                         onClick={() => handleEditLeaseClick(lease)}
                         className="text-sm text-gray-600 hover:text-gray-900 font-medium ml-auto"
                       >
@@ -410,16 +398,6 @@ export default function LeasesPage() {
         mode={leaseModalMode}
         properties={properties}
         tenants={tenants}
-      />
-
-      {/* Rent Revision Letter Modal */}
-      <RentRevisionLetterModal
-        isOpen={isRevisionModalOpen}
-        onClose={() => {
-          setIsRevisionModalOpen(false);
-          setSelectedLeaseForRevision(null);
-        }}
-        lease={selectedLeaseForRevision}
       />
     </div>
   );

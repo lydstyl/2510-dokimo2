@@ -1,6 +1,22 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
 import { getTranslations } from 'next-intl/server';
+import { DashboardCardWithBadge } from '@/components/DashboardCardWithBadge';
+import { prisma } from '@/infrastructure/database/prisma';
+import { PrismaRentRevisionRepository } from '@/features/rent-revision/infrastructure/PrismaRentRevisionRepository';
+import { GetRevisionStats } from '@/features/rent-revision/application/GetRevisionStats';
+
+async function getRevisionStats() {
+  try {
+    // Use repository directly instead of HTTP fetch (better for SSR)
+    const repository = new PrismaRentRevisionRepository(prisma);
+    const useCase = new GetRevisionStats(repository);
+    return await useCase.execute();
+  } catch (error) {
+    console.error('Error fetching revision stats:', error);
+    return { urgentCount: 0, enPreparationCount: 0, courrierEnvoyeCount: 0, upcomingCount: 0 };
+  }
+}
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -10,6 +26,7 @@ export default async function DashboardPage() {
   }
 
   const t = await getTranslations('dashboard');
+  const revisionStats = await getRevisionStats();
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -38,6 +55,32 @@ export default async function DashboardPage() {
           <DashboardCard title={t('cards.properties.title')} description={t('cards.properties.description')} href="/dashboard/properties" />
           <DashboardCard title={t('cards.tenants.title')} description={t('cards.tenants.description')} href="/dashboard/tenants" />
           <DashboardCard title={t('cards.leases.title')} description={t('cards.leases.description')} href="/dashboard/leases" />
+          <DashboardCardWithBadge
+            title={(await getTranslations('rentRevisions.dashboard'))('title')}
+            description={(await getTranslations('rentRevisions.dashboard'))('description')}
+            href="/dashboard/rent-revisions"
+            badge={
+              revisionStats.urgentCount > 0
+                ? {
+                    count: revisionStats.urgentCount,
+                    variant: 'red',
+                    label: (await getTranslations('rentRevisions.dashboard'))('badgeUrgent'),
+                  }
+                : revisionStats.enPreparationCount > 0
+                ? {
+                    count: revisionStats.enPreparationCount,
+                    variant: 'orange',
+                    label: (await getTranslations('rentRevisions.dashboard'))('badgePreparation'),
+                  }
+                : revisionStats.courrierEnvoyeCount > 0
+                ? {
+                    count: revisionStats.courrierEnvoyeCount,
+                    variant: 'green',
+                    label: (await getTranslations('rentRevisions.dashboard'))('badgeSent'),
+                  }
+                : undefined
+            }
+          />
           <DashboardCard title={t('cards.boilers.title')} description={t('cards.boilers.description')} href="/dashboard/boilers" />
           <DashboardCard title={t('cards.prorata.title')} description={t('cards.prorata.description')} href="/fr/prorata" />
           <DashboardCard title="Assurances" description="Gérer les attestations d'assurance" href="/dashboard/insurance" />

@@ -181,10 +181,13 @@ model RentRevision {
   rentAmount    Float
   chargesAmount Float
   reason        String?  // e.g., "IRL_REVISION", "AGREEMENT", etc.
+  status        String   @default("EN_PREPARATION") // "EN_PREPARATION", "COURRIER_AR_ENVOYE", "CANCELLED"
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([leaseId])
   @@index([effectiveDate])
+  @@index([status])
 }
 
 // Boiler - heating system linked to a property

@@ -811,7 +811,7 @@ Document généré automatiquement par le système de gestion locative.
     await handleDownloadReceiptPdf(month, receiptType);
 
     // Prepare email content
-    const civility = tenant.civility || '';
+    const civility = (tenant as any).civility || '';
     const subject = `Quittance de loyer - ${monthRow.monthLabel}`;
     const body = t('emailModal.emailBodyTemplate', {
       civility,
@@ -845,7 +845,7 @@ Document généré automatiquement par le système de gestion locative.
     }
 
     // Prepare email content
-    const civility = tenant.civility || '';
+    const civility = (tenant as any).civility || '';
     const subject = `Quittance de loyer - ${monthRow.monthLabel}`;
     const body = t('emailModal.emailBodyTemplate', {
       civility,
