@@ -12,10 +12,14 @@ export interface CreateRentRevisionDto {
   rentAmount: number;
   chargesAmount: number;
   reason?: string;
+  allowPastDate?: boolean; // Allow retroactive rent modifications
 }
 
 /**
  * Use case: Create a new rent revision
+ *
+ * Supports retroactive modifications: if allowPastDate is true, the effective date
+ * can be in the past, which will recalculate rent history from that date forward.
  */
 export class CreateRentRevision {
   constructor(private repository: IRentRevisionRepository) {}
@@ -26,6 +30,7 @@ export class CreateRentRevision {
     const chargesAmount = Money.create(dto.chargesAmount);
 
     // Create RentRevision entity (validates business rules)
+    // Pass allowPastDate option to allow retroactive modifications
     const revision = RentRevision.create({
       id: randomUUID(),
       leaseId: dto.leaseId,
@@ -36,7 +41,7 @@ export class CreateRentRevision {
       status: RentRevisionStatus.EN_PREPARATION,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    }, { allowPastDate: dto.allowPastDate });
 
     // Persist to repository
     return await this.repository.create(revision);

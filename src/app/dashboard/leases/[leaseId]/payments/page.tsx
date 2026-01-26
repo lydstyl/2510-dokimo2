@@ -399,6 +399,12 @@ export default function LeasePaymentsPage() {
       // Create rent revision with effective date = first day of selected month
       const effectiveDate = new Date(`${editingRentMonth}-01`);
 
+      // Check if the effective date is in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      effectiveDate.setHours(0, 0, 0, 0);
+      const isPastDate = effectiveDate.getTime() < today.getTime();
+
       const response = await fetch('/api/rent-revisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -408,6 +414,7 @@ export default function LeasePaymentsPage() {
           rentAmount,
           chargesAmount,
           reason: rentChangeReason || undefined,
+          allowPastDate: isPastDate, // Allow retroactive modifications
         }),
       });
 
@@ -1678,10 +1685,22 @@ prochain loyer ou remboursé selon accord entre les parties.
 
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                ⚠️ Cette modification s'appliquera à partir de{' '}
+                ℹ️ Cette modification s'appliquera à partir de{' '}
                 <strong>{monthlyRows.find(r => r.month === editingRentMonth)?.monthLabel}</strong>
                 {' '}et tous les mois suivants. Les soldes seront recalculés automatiquement.
               </p>
+              {(() => {
+                const effectiveDate = new Date(`${editingRentMonth}-01`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                effectiveDate.setHours(0, 0, 0, 0);
+                const isPastDate = effectiveDate.getTime() < today.getTime();
+                return isPastDate && (
+                  <p className="text-sm text-blue-800 mt-2">
+                    📅 Cette date est dans le passé. L'historique sera recalculé rétroactivement à partir de ce mois.
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="mb-4">

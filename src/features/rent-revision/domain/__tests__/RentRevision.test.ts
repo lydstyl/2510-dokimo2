@@ -49,6 +49,28 @@ describe('RentRevision', () => {
       ).toThrow('Effective date cannot be in the past');
     });
 
+    it('should allow past effectiveDate when allowPastDate option is true', () => {
+      const pastDate = new Date('2025-09-01');
+
+      const revision = RentRevision.create({
+        id: 'revision-1',
+        leaseId: 'lease-1',
+        effectiveDate: pastDate,
+        rentAmount: Money.create(850),
+        chargesAmount: Money.create(70),
+        reason: 'RETROACTIVE_CORRECTION',
+        status: RentRevisionStatus.EN_PREPARATION,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }, { allowPastDate: true });
+
+      expect(revision.id).toBe('revision-1');
+      expect(revision.effectiveDate).toEqual(pastDate);
+      expect(revision.rentAmount.getValue()).toBe(850);
+      expect(revision.chargesAmount.getValue()).toBe(70);
+      expect(revision.reason).toBe('RETROACTIVE_CORRECTION');
+    });
+
     it('should throw error if leaseId is empty', () => {
       expect(() =>
         RentRevision.create({

@@ -66,6 +66,31 @@ describe('CreateRentRevision', () => {
     await expect(useCase.execute(dto)).rejects.toThrow('Effective date cannot be in the past');
   });
 
+  it('should allow past effective date when allowPastDate is true', async () => {
+    const pastDate = new Date('2025-09-01');
+
+    const dto: CreateRentRevisionDto = {
+      leaseId: 'lease-1',
+      effectiveDate: pastDate,
+      rentAmount: 850,
+      chargesAmount: 70,
+      reason: 'RETROACTIVE_CORRECTION',
+      allowPastDate: true,
+    };
+
+    vi.mocked(mockRepository.create).mockImplementation(async (revision) => revision);
+
+    const result = await useCase.execute(dto);
+
+    expect(result.leaseId).toBe('lease-1');
+    expect(result.effectiveDate).toEqual(pastDate);
+    expect(result.rentAmount.getValue()).toBe(850);
+    expect(result.chargesAmount.getValue()).toBe(70);
+    expect(result.reason).toBe('RETROACTIVE_CORRECTION');
+    expect(result.status).toBe(RentRevisionStatus.EN_PREPARATION);
+    expect(mockRepository.create).toHaveBeenCalledOnce();
+  });
+
   it('should throw error if rent amount is negative', async () => {
     const dto: CreateRentRevisionDto = {
       leaseId: 'lease-1',

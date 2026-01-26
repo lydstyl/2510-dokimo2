@@ -15,6 +15,10 @@ export interface UpdateRentRevisionDto {
 
 /**
  * Use case: Update an existing rent revision
+ *
+ * This use case allows updating revisions that are in EN_PREPARATION status.
+ * It supports retroactive modifications - the effective date can be set to a past date,
+ * which will trigger recalculation of the rent history from that date forward.
  */
 export class UpdateRentRevision {
   constructor(private repository: IRentRevisionRepository) {}
@@ -32,6 +36,7 @@ export class UpdateRentRevision {
     }
 
     // Build update props
+    // Note: effectiveDate can be in the past for retroactive modifications
     const updateProps: Parameters<typeof existing.update>[0] = {};
 
     if (dto.effectiveDate !== undefined) {

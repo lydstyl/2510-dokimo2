@@ -61,23 +61,30 @@ export class RentRevision {
   /**
    * Factory method to create a NEW RentRevision entity
    * Validates all business rules including date in the future
+   *
+   * @param props - The rent revision properties
+   * @param options - Optional configuration
+   * @param options.allowPastDate - If true, allows effective dates in the past (for retroactive modifications)
    */
-  static create(props: RentRevisionProps): RentRevision {
+  static create(props: RentRevisionProps, options?: { allowPastDate?: boolean }): RentRevision {
     // Validation
     if (!props.leaseId || props.leaseId.trim() === '') {
       throw new Error('Lease ID is required');
     }
 
     // Validate effective date is not in the past (only for new revisions)
-    // We compare dates without time to allow today's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const effectiveDate = new Date(props.effectiveDate);
-    effectiveDate.setHours(0, 0, 0, 0);
+    // Skip this validation if explicitly allowed (for retroactive modifications)
+    if (!options?.allowPastDate) {
+      // We compare dates without time to allow today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const effectiveDate = new Date(props.effectiveDate);
+      effectiveDate.setHours(0, 0, 0, 0);
 
-    // Allow today and future dates, reject only past dates
-    if (effectiveDate.getTime() < today.getTime()) {
-      throw new Error('Effective date cannot be in the past');
+      // Allow today and future dates, reject only past dates
+      if (effectiveDate.getTime() < today.getTime()) {
+        throw new Error('Effective date cannot be in the past');
+      }
     }
 
     return new RentRevision(props);

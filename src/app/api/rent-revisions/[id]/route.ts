@@ -94,6 +94,10 @@ export async function GET(
 /**
  * PATCH /api/rent-revisions/[id]
  * Update a rent revision or mark letter as sent
+ *
+ * Supports retroactive modifications: effectiveDate can be set to a past date
+ * to recalculate rent history from that date forward. Only revisions in
+ * EN_PREPARATION status can be updated.
  */
 export async function PATCH(
   request: NextRequest,

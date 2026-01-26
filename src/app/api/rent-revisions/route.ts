@@ -104,6 +104,9 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/rent-revisions
  * Create a new rent revision
+ *
+ * Supports retroactive modifications: set allowPastDate to true to allow
+ * effective dates in the past and recalculate rent history accordingly.
  */
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -113,7 +116,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { leaseId, effectiveDate, rentAmount, chargesAmount, reason } = body;
+    const { leaseId, effectiveDate, rentAmount, chargesAmount, reason, allowPastDate } = body;
 
     if (!leaseId || !effectiveDate || rentAmount === undefined || chargesAmount === undefined) {
       return NextResponse.json(
@@ -131,6 +134,7 @@ export async function POST(request: NextRequest) {
       rentAmount: parseFloat(rentAmount),
       chargesAmount: parseFloat(chargesAmount),
       reason,
+      allowPastDate: allowPastDate === true, // Explicitly check for true
     });
 
     return NextResponse.json({
