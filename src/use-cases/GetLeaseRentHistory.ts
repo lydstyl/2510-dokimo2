@@ -1,5 +1,6 @@
 import { IRentRevisionRepository } from './interfaces/IRentRevisionRepository';
 import { ILeaseRepository } from './interfaces/ILeaseRepository';
+import { ILeaseRentOverrideRepository } from '@/features/rent-override/application/interfaces/ILeaseRentOverrideRepository';
 
 export interface RentForMonth {
   month: string; // YYYY-MM format
@@ -7,16 +8,24 @@ export interface RentForMonth {
   chargesAmount: number;
   totalAmount: number;
   revisionId?: string;
+  overrideId?: string; // ID of override if one is used
+  source: 'override' | 'revision' | 'base'; // where the rent amount comes from
 }
 
 /**
  * Use case: Get rent history for a lease, calculating which revision applies to each month
  * This is used to recalculate monthly balances when rent changes
+ *
+ * Priority order for determining rent amount:
+ * 1. LeaseRentOverride (if exists for specific month) - highest priority
+ * 2. RentRevision (if applicable for month)
+ * 3. Lease base amounts (fallback)
  */
 export class GetLeaseRentHistory {
   constructor(
     private rentRevisionRepository: IRentRevisionRepository,
-    private leaseRepository: ILeaseRepository
+    private leaseRepository: ILeaseRepository,
+    private rentOverrideRepository: ILeaseRentOverrideRepository
   ) {}
 
   async execute(leaseId: string, startMonth: string, endMonth: string): Promise<RentForMonth[]> {
@@ -29,16 +38,30 @@ export class GetLeaseRentHistory {
     // Get all rent revisions ordered by date
     const revisions = await this.rentRevisionRepository.findByLeaseIdOrderedByDate(leaseId);
 
+    // Get all rent overrides for this lease
+    const overrides = await this.rentOverrideRepository.findAllByLeaseId(leaseId);
+    const overridesByMonth = new Map(overrides.map(o => [o.month, o]));
+
     // Generate month list
     const months = this.generateMonthList(startMonth, endMonth);
 
-    // For each month, find the applicable rent revision
+    // For each month, determine rent amount with priority: override > revision > base
     const rentHistory: RentForMonth[] = months.map(month => {
-      const monthDate = new Date(`${month}-01`);
+      // Priority 1: Check for override for this specific month
+      const override = overridesByMonth.get(month);
+      if (override) {
+        return {
+          month,
+          rentAmount: override.rentAmount.getValue(),
+          chargesAmount: override.chargesAmount.getValue(),
+          totalAmount: override.totalAmount().getValue(),
+          overrideId: override.id,
+          source: 'override' as const,
+        };
+      }
 
-      // Find the most recent revision that is effective for this month
-      // Revisions are ordered by effectiveDate ascending, so we need to find
-      // the last one that is effective for this month
+      // Priority 2: Find the most recent revision that is effective for this month
+      const monthDate = new Date(`${month}-01`);
       let applicableRevision = null;
       for (const revision of revisions) {
         if (revision.isEffectiveForMonth(monthDate)) {
@@ -47,20 +70,26 @@ export class GetLeaseRentHistory {
         }
       }
 
-      // If no revision found, use the lease's base amounts
-      const rentAmount = applicableRevision
-        ? applicableRevision.rentAmount.getValue()
-        : lease.rentAmount.getValue();
-      const chargesAmount = applicableRevision
-        ? applicableRevision.chargesAmount.getValue()
-        : lease.chargesAmount.getValue();
+      if (applicableRevision) {
+        const rentAmt = applicableRevision.rentAmount.getValue();
+        const chargesAmt = applicableRevision.chargesAmount.getValue();
+        return {
+          month,
+          rentAmount: rentAmt,
+          chargesAmount: chargesAmt,
+          totalAmount: rentAmt + chargesAmt,
+          revisionId: applicableRevision.id,
+          source: 'revision' as const,
+        };
+      }
 
+      // Priority 3: Use the lease's base amounts
       return {
         month,
-        rentAmount,
-        chargesAmount,
-        totalAmount: rentAmount + chargesAmount,
-        revisionId: applicableRevision?.id,
+        rentAmount: lease.rentAmount.getValue(),
+        chargesAmount: lease.chargesAmount.getValue(),
+        totalAmount: lease.rentAmount.getValue() + lease.chargesAmount.getValue(),
+        source: 'base' as const,
       };
     });
 

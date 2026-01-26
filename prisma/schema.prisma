@@ -107,23 +107,24 @@ model Tenant {
 
 // Lease - links property and tenants (can have multiple tenants)
 model Lease {
-  id            String         @id @default(cuid())
-  propertyId    String
-  property      Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  startDate     DateTime
-  endDate       DateTime?
-  rentAmount    Float          // rent excluding charges
-  chargesAmount Float          // charges
-  paymentDueDay Int            // day of month when payment is due (1-31)
-  irlQuarter    String?        // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
-  note          String?        // optional markdown notes
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  tenants       LeaseTenant[]
-  payments      Payment[]
-  charges       Charge[]
-  rentRevisions RentRevision[]
-  inventories   Inventory[]
+  id               String              @id @default(cuid())
+  propertyId       String
+  property         Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  startDate        DateTime
+  endDate          DateTime?
+  rentAmount       Float               // rent excluding charges
+  chargesAmount    Float               // charges
+  paymentDueDay    Int                 // day of month when payment is due (1-31)
+  irlQuarter       String?             // IRL quarter reference (e.g., "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e")
+  note             String?             // optional markdown notes
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  tenants          LeaseTenant[]
+  payments         Payment[]
+  charges          Charge[]
+  rentRevisions    RentRevision[]
+  rentOverrides    LeaseRentOverride[] // ad-hoc rent adjustments for payment history
+  inventories      Inventory[]
 
   @@index([propertyId])
 }
@@ -188,6 +189,24 @@ model RentRevision {
   @@index([leaseId])
   @@index([effectiveDate])
   @@index([status])
+}
+
+// LeaseRentOverride - ad-hoc rent adjustments for specific months in payment history
+// Independent from RentRevision system - used for correcting historical data
+model LeaseRentOverride {
+  id            String   @id @default(cuid())
+  leaseId       String
+  lease         Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  month         String   // YYYY-MM format
+  rentAmount    Float    // rent excluding charges
+  chargesAmount Float    // charges
+  reason        String?  // optional note about why this override exists
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([leaseId, month]) // one override per lease per month
+  @@index([leaseId])
+  @@index([month])
 }
 
 // Boiler - heating system linked to a property

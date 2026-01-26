@@ -3,6 +3,7 @@ import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
+import { PrismaLeaseRentOverrideRepository } from '@/features/rent-override/infrastructure/PrismaLeaseRentOverrideRepository';
 import { GetLeaseRentHistory } from '@/use-cases/GetLeaseRentHistory';
 
 export async function GET(
@@ -47,10 +48,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Get rent history
+    // Get rent history with override support
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
-    const useCase = new GetLeaseRentHistory(rentRevisionRepo, leaseRepo);
+    const rentOverrideRepo = new PrismaLeaseRentOverrideRepository(prisma);
+    const useCase = new GetLeaseRentHistory(rentRevisionRepo, leaseRepo, rentOverrideRepo);
 
     const rentHistory = await useCase.execute(leaseId, startMonth, endMonth);
 

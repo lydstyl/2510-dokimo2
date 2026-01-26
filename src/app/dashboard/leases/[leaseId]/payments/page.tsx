@@ -396,25 +396,16 @@ export default function LeasePaymentsPage() {
     }
 
     try {
-      // Create rent revision with effective date = first day of selected month
-      const effectiveDate = new Date(`${editingRentMonth}-01`);
-
-      // Check if the effective date is in the past
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      effectiveDate.setHours(0, 0, 0, 0);
-      const isPastDate = effectiveDate.getTime() < today.getTime();
-
-      const response = await fetch('/api/rent-revisions', {
+      // Create rent override for this specific month
+      // This does NOT create a formal RentRevision - it's just for payment history display
+      const response = await fetch(`/api/leases/${lease.id}/rent-overrides`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          leaseId: lease.id,
-          effectiveDate: effectiveDate.toISOString(),
+          month: editingRentMonth, // YYYY-MM format
           rentAmount,
           chargesAmount,
           reason: rentChangeReason || undefined,
-          allowPastDate: isPastDate, // Allow retroactive modifications
         }),
       });
 
@@ -1685,22 +1676,13 @@ prochain loyer ou remboursé selon accord entre les parties.
 
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                ℹ️ Cette modification s'appliquera à partir de{' '}
-                <strong>{monthlyRows.find(r => r.month === editingRentMonth)?.monthLabel}</strong>
-                {' '}et tous les mois suivants. Les soldes seront recalculés automatiquement.
+                ℹ️ Cette modification affecte uniquement l'historique des paiements pour le mois de{' '}
+                <strong>{monthlyRows.find(r => r.month === editingRentMonth)?.monthLabel}</strong>.
               </p>
-              {(() => {
-                const effectiveDate = new Date(`${editingRentMonth}-01`);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                effectiveDate.setHours(0, 0, 0, 0);
-                const isPastDate = effectiveDate.getTime() < today.getTime();
-                return isPastDate && (
-                  <p className="text-sm text-blue-800 mt-2">
-                    📅 Cette date est dans le passé. L'historique sera recalculé rétroactivement à partir de ce mois.
-                  </p>
-                );
-              })()}
+              <p className="text-xs text-blue-700 mt-2">
+                💡 Ceci est une correction ponctuelle qui ne crée pas de révision de loyer formelle.
+                Pour une révision officielle (IRL, etc.), utilisez la section "Révisions de loyer".
+              </p>
             </div>
 
             <div className="mb-4">
