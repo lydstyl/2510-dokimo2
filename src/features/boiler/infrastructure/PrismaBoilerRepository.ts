@@ -24,6 +24,14 @@ export class PrismaBoilerRepository implements IBoilerRepository {
     return boilers.map((b) => this.toDomain(b));
   }
 
+  async findAll(): Promise<Boiler[]> {
+    const boilers = await this.prisma.boiler.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return boilers.map((b) => this.toDomain(b));
+  }
+
   async create(boiler: Boiler): Promise<Boiler> {
     const created = await this.prisma.boiler.create({
       data: {

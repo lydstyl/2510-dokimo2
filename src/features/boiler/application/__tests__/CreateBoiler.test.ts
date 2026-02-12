@@ -11,6 +11,7 @@ describe('CreateBoiler', () => {
     mockRepository = {
       findById: vi.fn(),
       findByPropertyId: vi.fn(),
+      findAll: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),

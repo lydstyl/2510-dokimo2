@@ -48,7 +48,8 @@
       },
       "boilers": {
         "title": "Chaudières",
-        "description": "Gérer les chaudières et leurs entretiens"
+        "description": "Gérer les chaudières et leurs entretiens",
+        "badgeOverdue": "en retard"
       },
       "prorata": {
         "title": "Calcul Prorata",

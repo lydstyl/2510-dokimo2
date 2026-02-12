@@ -5,6 +5,9 @@ import { DashboardCardWithBadge } from '@/components/DashboardCardWithBadge';
 import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaRentRevisionRepository } from '@/features/rent-revision/infrastructure/PrismaRentRevisionRepository';
 import { GetRevisionStats } from '@/features/rent-revision/application/GetRevisionStats';
+import { PrismaBoilerRepository } from '@/features/boiler/infrastructure/PrismaBoilerRepository';
+import { PrismaBoilerMaintenanceRepository } from '@/features/boiler/infrastructure/PrismaBoilerMaintenanceRepository';
+import { GetBoilerOverdueStats } from '@/features/boiler/application/GetBoilerOverdueStats';
 
 async function getRevisionStats() {
   try {
@@ -18,6 +21,18 @@ async function getRevisionStats() {
   }
 }
 
+async function getBoilerOverdueStats() {
+  try {
+    const boilerRepository = new PrismaBoilerRepository(prisma);
+    const maintenanceRepository = new PrismaBoilerMaintenanceRepository(prisma);
+    const useCase = new GetBoilerOverdueStats(boilerRepository, maintenanceRepository);
+    return await useCase.execute();
+  } catch (error) {
+    console.error('Error fetching boiler overdue stats:', error);
+    return { overdueCount: 0, noMaintenanceCount: 0, totalAttentionNeeded: 0 };
+  }
+}
+
 export default async function DashboardPage() {
   const session = await getSession();
 
@@ -26,7 +41,10 @@ export default async function DashboardPage() {
   }
 
   const t = await getTranslations('dashboard');
-  const revisionStats = await getRevisionStats();
+  const [revisionStats, boilerStats] = await Promise.all([
+    getRevisionStats(),
+    getBoilerOverdueStats(),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -81,7 +99,20 @@ export default async function DashboardPage() {
                 : undefined
             }
           />
-          <DashboardCard title={t('cards.boilers.title')} description={t('cards.boilers.description')} href="/dashboard/boilers" />
+          <DashboardCardWithBadge
+            title={t('cards.boilers.title')}
+            description={t('cards.boilers.description')}
+            href="/dashboard/boilers"
+            badge={
+              boilerStats.totalAttentionNeeded > 0
+                ? {
+                    count: boilerStats.totalAttentionNeeded,
+                    variant: 'red',
+                    label: t('cards.boilers.badgeOverdue'),
+                  }
+                : undefined
+            }
+          />
           <DashboardCard title={t('cards.prorata.title')} description={t('cards.prorata.description')} href="/fr/prorata" />
           <DashboardCard title="Assurances" description="Gérer les attestations d'assurance" href="/dashboard/insurance" />
           <DashboardCard title="Compteurs d'eau" description="Suivre les relevés de compteurs" href="/dashboard/water-meters" />
