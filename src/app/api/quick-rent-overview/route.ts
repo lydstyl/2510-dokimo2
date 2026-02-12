@@ -75,30 +75,29 @@ export async function GET(request: NextRequest) {
       const balanceBefore = balance.balance - totalPaidThisMonth;
       const balanceAfter = balance.balance;
 
+      // Normalize near-zero balances to avoid floating point artifacts (e.g. -1.1e-16 displayed as -0.00)
+      const TOLERANCE = 0.01;
+      const normalizedBalanceBefore = Math.abs(balanceBefore) < TOLERANCE ? 0 : balanceBefore;
+      const normalizedBalanceAfter = Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter;
+
       // Determine receipt type
       let receiptType: 'unpaid' | 'partial' | 'full' | 'overpayment';
       if (totalPaidThisMonth === 0) {
         // No payment this month
         receiptType = 'unpaid';
-      } else if (balanceAfter === 0 && totalPaidThisMonth === monthlyRent) {
-        // Paid exactly the rent amount and balance is zero
-        receiptType = 'full';
-      } else if (balanceAfter === 0 && totalPaidThisMonth < monthlyRent) {
-        // Balance is zero but paid less than rent (used previous credit)
-        receiptType = 'partial';
-      } else if (balanceAfter > 0) {
-        // Overpaid (balance is positive)
+      } else if (normalizedBalanceAfter > 0) {
+        // Overpaid (balance is positive beyond tolerance)
         receiptType = 'overpayment';
-      } else if (balanceAfter < 0 && totalPaidThisMonth > 0) {
-        // Paid something but still underpaid
-        receiptType = 'partial';
+      } else if (normalizedBalanceAfter === 0) {
+        // Balance is exactly zero (within tolerance) — full receipt
+        receiptType = 'full';
       } else {
-        // Default case: underpaid with no payment
-        receiptType = 'unpaid';
+        // Still underpaid after payment
+        receiptType = 'partial';
       }
 
-      // Only include if unpaid or overpaid (balance != 0)
-      if (balanceAfter !== 0) {
+      // Only include if tenant has an outstanding balance (exclude fully-paid)
+      if (normalizedBalanceAfter !== 0) {
         results.push({
           leaseId: lease.id,
           property: {
@@ -113,8 +112,8 @@ export async function GET(request: NextRequest) {
           month: currentMonth,
           rentDue: monthlyRent,
           amountPaid: totalPaidThisMonth,
-          balanceBefore,
-          balanceAfter,
+          balanceBefore: normalizedBalanceBefore,
+          balanceAfter: normalizedBalanceAfter,
           receiptType,
           payments: paymentsThisMonth.map(p => ({
             id: p.id,

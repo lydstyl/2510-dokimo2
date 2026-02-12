@@ -82,6 +82,7 @@
     "actions": {
       "downloadTxt": "TXT",
       "downloadPdf": "PDF",
+      "history": "Historique",
       "addPayment": "Ajouter paiement",
       "editPayment": "Modifier paiement",
       "deletePayment": "Supprimer paiement",

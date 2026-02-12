@@ -268,6 +268,10 @@ export default function LeasePaymentsPage() {
       runningBalance = runningBalance + totalPaid - monthlyRent - totalCharges;
       const balanceAfter = runningBalance;
 
+      // Normalize near-zero balances to avoid floating point artifacts (e.g. +1.1e-16 treated as overpayment)
+      const TOLERANCE = 0.01;
+      const normalizedBalanceAfter = Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter;
+
       // Determine receipt type
       let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
 
@@ -276,7 +280,7 @@ export default function LeasePaymentsPage() {
         // Si le locataire avait un crédit avant (balanceBefore > 0), il utilise son crédit
         if (balanceBefore > 0) {
           // Vérifier si le crédit couvre tout le loyer
-          if (balanceAfter >= -0.01) {
+          if (normalizedBalanceAfter >= 0) {
             receiptType = 'full'; // Le crédit a couvert tout le loyer
           } else {
             receiptType = 'partial'; // Le crédit n'a pas couvert tout le loyer
@@ -285,11 +289,11 @@ export default function LeasePaymentsPage() {
           // Pas de crédit et pas de paiement = loyer impayé
           receiptType = 'unpaid';
         }
-      } else if (balanceAfter > 0) {
-        // Si le solde après est positif, c'est un trop-perçu
+      } else if (normalizedBalanceAfter > 0) {
+        // Si le solde après est positif (au-delà de la tolérance), c'est un trop-perçu
         receiptType = 'overpayment';
-      } else if (balanceAfter >= -0.01) {
-        // Si le solde est proche de 0 (±0.01), c'est une quittance complète
+      } else if (normalizedBalanceAfter === 0) {
+        // Si le solde est nul (dans la tolérance), c'est une quittance complète
         receiptType = 'full';
       } else {
         // Sinon c'est un paiement partiel
@@ -313,7 +317,7 @@ export default function LeasePaymentsPage() {
         totalPaid,
         totalCharges,
         balanceBefore,
-        balanceAfter,
+        balanceAfter: normalizedBalanceAfter,
         receiptType,
       });
     });

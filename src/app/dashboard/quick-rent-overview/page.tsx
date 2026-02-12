@@ -111,12 +111,6 @@ export default function QuickRentOverviewPage() {
     }
   };
 
-  const handleDownloadReceipt = (format: 'txt' | 'pdf', leaseId: string, month: string) => {
-    // Navigate to the lease payments page where receipts can be downloaded
-    const [year, monthNum] = month.split('-');
-    router.push(`/dashboard/leases/${leaseId}/payments`);
-  };
-
   const getReceiptTypeLabel = (type: string) => {
     return t(`receiptTypes.${type}` as any);
   };
@@ -311,21 +305,12 @@ export default function QuickRentOverviewPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex flex-col gap-1">
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleDownloadReceipt('txt', row.leaseId, row.month)}
-                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
-                            >
-                              {t('actions.downloadTxt')}
-                            </button>
-                            <span className="text-gray-300">|</span>
-                            <button
-                              onClick={() => handleDownloadReceipt('pdf', row.leaseId, row.month)}
-                              className="text-blue-600 hover:text-blue-900 font-medium text-xs"
-                            >
-                              {t('actions.downloadPdf')}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => router.push(`/dashboard/leases/${row.leaseId}/payments`)}
+                            className="text-blue-600 hover:text-blue-900 font-medium text-xs text-left"
+                          >
+                            {t('actions.history')}
+                          </button>
                           <button
                             onClick={() => handleAddPayment(row.leaseId, row.rentDue)}
                             className="text-green-600 hover:text-green-900 font-medium text-xs text-left"
