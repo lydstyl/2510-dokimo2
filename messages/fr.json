@@ -51,6 +51,9 @@
         "description": "Gérer les chaudières et leurs entretiens",
         "badgeOverdue": "en retard"
       },
+      "insurance": {
+        "badgeAttention": "à régulariser"
+      },
       "prorata": {
         "title": "Calcul Prorata",
         "description": "Calculer le prorata temporis pour les entrées et sorties"

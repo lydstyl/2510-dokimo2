@@ -8,6 +8,8 @@ import { GetRevisionStats } from '@/features/rent-revision/application/GetRevisi
 import { PrismaBoilerRepository } from '@/features/boiler/infrastructure/PrismaBoilerRepository';
 import { PrismaBoilerMaintenanceRepository } from '@/features/boiler/infrastructure/PrismaBoilerMaintenanceRepository';
 import { GetBoilerOverdueStats } from '@/features/boiler/application/GetBoilerOverdueStats';
+import { PrismaInsuranceCertificateRepository } from '@/features/insurance/infrastructure/PrismaInsuranceCertificateRepository';
+import { GetInsuranceStats } from '@/features/insurance/application/GetInsuranceStats';
 
 async function getRevisionStats() {
   try {
@@ -33,6 +35,28 @@ async function getBoilerOverdueStats() {
   }
 }
 
+async function getInsuranceStats() {
+  try {
+    // Fetch active lease IDs to check insurance status
+    const now = new Date();
+    const activeLeases = await prisma.lease.findMany({
+      where: {
+        startDate: { lte: now },
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
+      },
+      select: { id: true },
+    });
+    const activeLeaseIds = activeLeases.map((l) => l.id);
+
+    const repository = new PrismaInsuranceCertificateRepository(prisma);
+    const useCase = new GetInsuranceStats(repository);
+    return await useCase.execute(activeLeaseIds);
+  } catch (error) {
+    console.error('Error fetching insurance stats:', error);
+    return { expiredCount: 0, noInsuranceCount: 0, totalAttentionNeeded: 0 };
+  }
+}
+
 export default async function DashboardPage() {
   const session = await getSession();
 
@@ -41,9 +65,10 @@ export default async function DashboardPage() {
   }
 
   const t = await getTranslations('dashboard');
-  const [revisionStats, boilerStats] = await Promise.all([
+  const [revisionStats, boilerStats, insuranceStats] = await Promise.all([
     getRevisionStats(),
     getBoilerOverdueStats(),
+    getInsuranceStats(),
   ]);
 
   return (
@@ -114,7 +139,20 @@ export default async function DashboardPage() {
             }
           />
           <DashboardCard title={t('cards.prorata.title')} description={t('cards.prorata.description')} href="/fr/prorata" />
-          <DashboardCard title="Assurances" description="Gérer les attestations d'assurance" href="/dashboard/insurance" />
+          <DashboardCardWithBadge
+            title="Assurances"
+            description="Gérer les attestations d'assurance"
+            href="/dashboard/insurance"
+            badge={
+              insuranceStats.totalAttentionNeeded > 0
+                ? {
+                    count: insuranceStats.totalAttentionNeeded,
+                    variant: 'red',
+                    label: t('cards.insurance.badgeAttention'),
+                  }
+                : undefined
+            }
+          />
           <DashboardCard title="Compteurs d'eau" description="Suivre les relevés de compteurs" href="/dashboard/water-meters" />
           <DashboardCard title="Diagnostics" description="Gérer les diagnostics immobiliers" href="/dashboard/diagnostics" />
           <DashboardCard title="États des lieux" description="Tous les états des lieux" href="/dashboard/inventories" />

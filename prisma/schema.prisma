@@ -76,7 +76,6 @@ model Property {
   updatedAt             DateTime               @updatedAt
   leases                Lease[]
   boilers               Boiler[]
-  insuranceCertificates InsuranceCertificate[]
   waterMeterReadings    WaterMeterReading[]
   chargeShares          PropertyChargeShare[]
   inventories           Inventory[]
@@ -123,9 +122,10 @@ model Lease {
   tenants          LeaseTenant[]
   payments         Payment[]
   charges          Charge[]
-  rentRevisions    RentRevision[]
-  rentOverrides    LeaseRentOverride[] // ad-hoc rent adjustments for payment history
-  inventories      Inventory[]
+  rentRevisions         RentRevision[]
+  rentOverrides         LeaseRentOverride[] // ad-hoc rent adjustments for payment history
+  inventories           Inventory[]
+  insuranceCertificates InsuranceCertificate[]
 
   @@index([propertyId])
 }
@@ -238,18 +238,18 @@ model BoilerMaintenance {
   @@index([maintenanceDate])
 }
 
-// InsuranceCertificate - home insurance certificate for a property
+// InsuranceCertificate - home insurance certificate for a lease (tenant)
 model InsuranceCertificate {
   id           String   @id @default(cuid())
-  propertyId   String
-  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  leaseId      String
+  lease        Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
   startDate    DateTime
   endDate      DateTime? // optional end date
   documentPath String?   // optional path to PDF or image file
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  @@index([propertyId])
+  @@index([leaseId])
   @@index([startDate])
   @@index([endDate])
 }

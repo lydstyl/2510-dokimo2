@@ -9,7 +9,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate,
         endDate,
         documentPath: '/uploads/insurance.pdf',
@@ -18,7 +18,7 @@ describe('InsuranceCertificate', () => {
       });
 
       expect(cert.id).toBe('cert-1');
-      expect(cert.propertyId).toBe('property-1');
+      expect(cert.leaseId).toBe('lease-1');
       expect(cert.startDate).toBe(startDate);
       expect(cert.endDate).toBe(endDate);
       expect(cert.documentPath).toBe('/uploads/insurance.pdf');
@@ -29,7 +29,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -43,7 +43,7 @@ describe('InsuranceCertificate', () => {
       expect(() => {
         InsuranceCertificate.create({
           id: '',
-          propertyId: 'property-1',
+          leaseId: 'lease-1',
           startDate: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -51,23 +51,23 @@ describe('InsuranceCertificate', () => {
       }).toThrow('Insurance certificate id is required');
     });
 
-    it('should throw error when propertyId is missing', () => {
+    it('should throw error when leaseId is missing', () => {
       expect(() => {
         InsuranceCertificate.create({
           id: 'cert-1',
-          propertyId: '',
+          leaseId: '',
           startDate: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-      }).toThrow('Property id is required');
+      }).toThrow('Lease id is required');
     });
 
     it('should throw error when startDate is missing', () => {
       expect(() => {
         InsuranceCertificate.create({
           id: 'cert-1',
-          propertyId: 'property-1',
+          leaseId: 'lease-1',
           startDate: null as any,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -79,7 +79,7 @@ describe('InsuranceCertificate', () => {
       expect(() => {
         InsuranceCertificate.create({
           id: 'cert-1',
-          propertyId: 'property-1',
+          leaseId: 'lease-1',
           startDate: new Date('2024-01-01'),
           endDate: new Date('2023-12-31'),
           createdAt: new Date(),
@@ -96,7 +96,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: new Date(),
         endDate: futureDate,
         createdAt: new Date(),
@@ -112,7 +112,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: new Date('2023-01-01'),
         endDate: pastDate,
         createdAt: new Date(),
@@ -125,7 +125,7 @@ describe('InsuranceCertificate', () => {
     it('should return false when no endDate', () => {
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -142,7 +142,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: sixMonthsAgo,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -157,7 +157,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: thirteenMonthsAgo,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -171,7 +171,7 @@ describe('InsuranceCertificate', () => {
     it('should return 0 for certificate starting today', () => {
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -186,7 +186,7 @@ describe('InsuranceCertificate', () => {
 
       const cert = InsuranceCertificate.create({
         id: 'cert-1',
-        propertyId: 'property-1',
+        leaseId: 'lease-1',
         startDate: eightMonthsAgo,
         createdAt: new Date(),
         updatedAt: new Date(),

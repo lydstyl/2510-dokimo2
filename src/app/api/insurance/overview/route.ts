@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
 
-// GET /api/insurance/overview - Get all insurance certificates with property info
+// GET /api/insurance/overview - Get all insurance certificates with lease and property info
+// Note: use /api/insurance/by-lease for the full by-lease view
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
@@ -12,9 +13,13 @@ export async function GET(request: NextRequest) {
   try {
     const certificates = await prisma.insuranceCertificate.findMany({
       include: {
-        property: {
+        lease: {
           include: {
-            landlord: true,
+            property: {
+              include: {
+                landlord: true,
+              },
+            },
           },
         },
       },
@@ -23,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
     const certificatesWithStatus = certificates.map((cert) => {
-      const endDate = cert.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // Default to 1 year if null
+      const endDate = cert.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       const daysUntilExpiry = Math.ceil(
         (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -32,10 +37,10 @@ export async function GET(request: NextRequest) {
 
       return {
         id: cert.id,
-        propertyId: cert.propertyId,
-        propertyName: cert.property.name,
-        propertyAddress: `${cert.property.address}, ${cert.property.postalCode} ${cert.property.city}`,
-        landlordName: cert.property.landlord.name,
+        leaseId: cert.leaseId,
+        propertyName: cert.lease.property.name,
+        propertyAddress: `${cert.lease.property.address}, ${cert.lease.property.postalCode} ${cert.lease.property.city}`,
+        landlordName: cert.lease.property.landlord.name,
         issueDate: cert.startDate.toISOString(),
         expiryDate: endDate.toISOString(),
         pdfPath: cert.documentPath,

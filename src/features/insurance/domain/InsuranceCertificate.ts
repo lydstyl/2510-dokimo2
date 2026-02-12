@@ -1,6 +1,6 @@
 export interface InsuranceCertificateProps {
   id: string;
-  propertyId: string;
+  leaseId: string;
   startDate: Date;
   endDate?: Date;
   documentPath?: string;
@@ -17,8 +17,8 @@ export class InsuranceCertificate {
     if (!this.props.id || this.props.id.trim() === '') {
       throw new Error('Insurance certificate id is required');
     }
-    if (!this.props.propertyId || this.props.propertyId.trim() === '') {
-      throw new Error('Property id is required');
+    if (!this.props.leaseId || this.props.leaseId.trim() === '') {
+      throw new Error('Lease id is required');
     }
     if (!this.props.startDate) {
       throw new Error('Start date is required');
@@ -36,8 +36,8 @@ export class InsuranceCertificate {
     return this.props.id;
   }
 
-  get propertyId(): string {
-    return this.props.propertyId;
+  get leaseId(): string {
+    return this.props.leaseId;
   }
 
   get startDate(): Date {

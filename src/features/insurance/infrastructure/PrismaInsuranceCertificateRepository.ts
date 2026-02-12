@@ -15,18 +15,18 @@ export class PrismaInsuranceCertificateRepository implements IInsuranceCertifica
     return this.toDomain(cert);
   }
 
-  async findByPropertyId(propertyId: string): Promise<InsuranceCertificate[]> {
+  async findByLeaseId(leaseId: string): Promise<InsuranceCertificate[]> {
     const certs = await this.prisma.insuranceCertificate.findMany({
-      where: { propertyId },
+      where: { leaseId },
       orderBy: { startDate: 'desc' },
     });
 
     return certs.map((c) => this.toDomain(c));
   }
 
-  async findLatestByPropertyId(propertyId: string): Promise<InsuranceCertificate | null> {
+  async findLatestByLeaseId(leaseId: string): Promise<InsuranceCertificate | null> {
     const cert = await this.prisma.insuranceCertificate.findFirst({
-      where: { propertyId },
+      where: { leaseId },
       orderBy: { startDate: 'desc' },
     });
 
@@ -47,7 +47,7 @@ export class PrismaInsuranceCertificateRepository implements IInsuranceCertifica
     const created = await this.prisma.insuranceCertificate.create({
       data: {
         id: certificate.id,
-        propertyId: certificate.propertyId,
+        leaseId: certificate.leaseId,
         startDate: certificate.startDate,
         endDate: certificate.endDate,
         documentPath: certificate.documentPath,
@@ -81,7 +81,7 @@ export class PrismaInsuranceCertificateRepository implements IInsuranceCertifica
 
   private toDomain(cert: {
     id: string;
-    propertyId: string;
+    leaseId: string;
     startDate: Date;
     endDate: Date | null;
     documentPath: string | null;
@@ -90,7 +90,7 @@ export class PrismaInsuranceCertificateRepository implements IInsuranceCertifica
   }): InsuranceCertificate {
     return InsuranceCertificate.create({
       id: cert.id,
-      propertyId: cert.propertyId,
+      leaseId: cert.leaseId,
       startDate: cert.startDate,
       endDate: cert.endDate ?? undefined,
       documentPath: cert.documentPath ?? undefined,

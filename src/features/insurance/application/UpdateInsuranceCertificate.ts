@@ -20,7 +20,7 @@ export class UpdateInsuranceCertificate {
 
     const updated = InsuranceCertificate.create({
       id: existing.id,
-      propertyId: existing.propertyId,
+      leaseId: existing.leaseId,
       startDate: input.startDate !== undefined ? input.startDate : existing.startDate,
       endDate: input.endDate !== undefined ? input.endDate : existing.endDate,
       documentPath: input.documentPath !== undefined ? input.documentPath : existing.documentPath,

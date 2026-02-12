@@ -16,13 +16,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const formData = await request.formData();
-    const propertyId = formData.get('propertyId') as string;
+    const leaseId = formData.get('leaseId') as string;
     const startDateStr = formData.get('startDate') as string;
     const endDateStr = formData.get('endDate') as string | null;
     const document = formData.get('document') as File | null;
 
-    if (!propertyId || propertyId.trim() === '') {
-      return NextResponse.json({ error: 'Property ID is required' }, { status: 400 });
+    if (!leaseId || leaseId.trim() === '') {
+      return NextResponse.json({ error: 'Lease ID is required' }, { status: 400 });
     }
 
     if (!startDateStr) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const createCertificate = new CreateInsuranceCertificate(repository);
 
     const certificate = await createCertificate.execute({
-      propertyId,
+      leaseId,
       startDate,
       endDate,
       documentPath,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         id: certificate.id,
-        propertyId: certificate.propertyId,
+        leaseId: certificate.leaseId,
         startDate: certificate.startDate.toISOString(),
         endDate: certificate.endDate?.toISOString(),
         documentPath: certificate.documentPath,

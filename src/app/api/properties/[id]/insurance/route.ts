@@ -3,7 +3,7 @@ import { getSession } from '@/infrastructure/auth/session';
 import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaInsuranceCertificateRepository } from '@/features/insurance/infrastructure/PrismaInsuranceCertificateRepository';
 
-// GET /api/properties/[id]/insurance - Get insurance certificates for a property
+// GET /api/properties/[id]/insurance - Get insurance certificates for all leases of a property
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,13 +16,22 @@ export async function GET(
   try {
     const { id: propertyId } = await params;
 
+    // Get all leases for this property
+    const leases = await prisma.lease.findMany({
+      where: { propertyId },
+      select: { id: true },
+    });
+
     const repository = new PrismaInsuranceCertificateRepository(prisma);
-    const certificates = await repository.findByPropertyId(propertyId);
+    const allCertificates = await Promise.all(
+      leases.map((lease) => repository.findByLeaseId(lease.id))
+    );
+    const certificates = allCertificates.flat();
 
     return NextResponse.json(
       certificates.map((cert) => ({
         id: cert.id,
-        propertyId: cert.propertyId,
+        leaseId: cert.leaseId,
         startDate: cert.startDate.toISOString(),
         endDate: cert.endDate?.toISOString(),
         documentPath: cert.documentPath,

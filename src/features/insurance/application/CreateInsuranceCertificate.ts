@@ -3,7 +3,7 @@ import { IInsuranceCertificateRepository } from './interfaces/IInsuranceCertific
 import { randomUUID } from 'crypto';
 
 interface CreateInsuranceCertificateInput {
-  propertyId: string;
+  leaseId: string;
   startDate: Date;
   endDate?: Date;
   documentPath?: string;
@@ -17,7 +17,7 @@ export class CreateInsuranceCertificate {
 
     const certificate = InsuranceCertificate.create({
       id: randomUUID(),
-      propertyId: input.propertyId,
+      leaseId: input.leaseId,
       startDate: input.startDate,
       endDate: input.endDate,
       documentPath: input.documentPath,

@@ -59,7 +59,7 @@ export async function PATCH(
 
     return NextResponse.json({
       id: certificate.id,
-      propertyId: certificate.propertyId,
+      leaseId: certificate.leaseId,
       startDate: certificate.startDate.toISOString(),
       endDate: certificate.endDate?.toISOString(),
       documentPath: certificate.documentPath,
