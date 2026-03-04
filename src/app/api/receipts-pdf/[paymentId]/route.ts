@@ -6,8 +6,8 @@ import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/Pris
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
-import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
-import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
+import { PrismaLeaseRentOverrideRepository } from '@/features/rent-override/infrastructure/PrismaLeaseRentOverrideRepository';
+import { CalculateMonthlyPaymentHistory } from '@/features/lease-payment-history/application/CalculateMonthlyPaymentHistory';
 
 export async function GET(
   request: NextRequest,
@@ -53,67 +53,62 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Get applicable rent for the payment date (considering rent revisions)
+    // Get monthly payment data using the centralized use case
     const rentRevisionRepo = new PrismaRentRevisionRepository(prisma);
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
     const chargeRepo = new PrismaChargeRepository(prisma);
+    const rentOverrideRepo = new PrismaLeaseRentOverrideRepository(prisma);
 
-    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
-    const applicableRent = await getApplicableRent.execute(
-      payment.leaseId,
-      new Date(payment.paymentDate)
-    );
-
-    // Calculate balances for the MONTH (same logic as HTML table)
-    // The table shows balance at start and end of month, not around individual payment
+    // Get the month for which we want the data (YYYY-MM format)
     const paymentDate = new Date(payment.paymentDate);
+    const targetMonth = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
 
-    const calculateBalance = new CalculateLeaseBalance(
-      rentRevisionRepo,
+    // Use the centralized monthly payment history calculator
+    const calculateMonthlyHistory = new CalculateMonthlyPaymentHistory(
       leaseRepo,
       paymentRepo,
-      chargeRepo
+      chargeRepo,
+      rentRevisionRepo,
+      rentOverrideRepo
     );
 
-    // Balance before = balance at end of previous month
-    const endOfPreviousMonth = new Date(
-      paymentDate.getFullYear(),
-      paymentDate.getMonth(),
-      0,
-      23, 59, 59, 999
-    );
-
-    const previousMonthResult = await calculateBalance.execute(
+    const monthlyHistory = await calculateMonthlyHistory.execute(
       payment.leaseId,
-      endOfPreviousMonth
+      targetMonth,
+      targetMonth
     );
 
-    const balanceBefore = previousMonthResult.balance;
+    if (monthlyHistory.length === 0) {
+      return NextResponse.json(
+        { error: 'No payment data found for this month' },
+        { status: 404 }
+      );
+    }
 
-    // Balance after = balance at end of current month
-    const endOfCurrentMonth = new Date(
-      paymentDate.getFullYear(),
-      paymentDate.getMonth() + 1,
-      0,
-      23, 59, 59, 999
-    );
+    const monthData = monthlyHistory[0];
 
-    const currentMonthResult = await calculateBalance.execute(
-      payment.leaseId,
-      endOfCurrentMonth
-    );
-
-    const balanceAfter = currentMonthResult.balance;
+    // Extract rent amounts and balances from the centralized calculation
+    const applicableRent = {
+      rentAmount: monthData.rentAmount,
+      chargesAmount: monthData.chargesAmount
+    };
+    const balanceBefore = monthData.balanceBefore;
+    const balanceAfter = monthData.balanceAfter;
 
     // Generate receipt number
     const receiptNumber = `REC-${payment.id.slice(0, 8).toUpperCase()}`;
+
+    // Calculate period label (e.g., "Janvier 2026")
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const periodLabel = `${monthNames[paymentDate.getMonth()]} ${paymentDate.getFullYear()}`;
 
     // Prepare data for PDF generation with applicable rent amounts
     const receiptData = {
       receiptNumber,
       issueDate: new Date(),
       paymentDate: payment.paymentDate,
+      period: periodLabel,
       receiptType,
       landlord: {
         name: payment.lease.property.landlord.name,

@@ -5,6 +5,7 @@ export interface ReceiptData {
   receiptNumber: string;
   issueDate: Date;
   paymentDate: Date;
+  period?: string; // e.g., "Janvier 2026"
   receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
   landlord: {
     name: string;
@@ -138,6 +139,16 @@ export class PdfReceiptGenerator {
   private addMetadata(pdf: jsPDF, data: ReceiptData, y: number): number {
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
+
+    // Add period if provided
+    if (data.period) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text(`Période : ${data.period}`, this.MARGIN_LEFT, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      y += this.LINE_HEIGHT;
+    }
 
     pdf.text(`Numéro de reçu : ${data.receiptNumber}`, this.MARGIN_LEFT, y);
     y += this.LINE_HEIGHT;

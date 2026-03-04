@@ -64,6 +64,8 @@ interface MonthlyRow {
   month: string // YYYY-MM format
   monthLabel: string // For display
   monthlyRent: number
+  rentAmount: number // Rent amount for this specific month (after revisions)
+  chargesAmount: number // Charges amount for this specific month (after revisions)
   payments: Payment[]
   charges: Charge[]
   totalPaid: number
@@ -186,160 +188,40 @@ export default function LeasePaymentsPage() {
     // Take last 24 months, or all months if lease is younger than 24 months
     const last24Months = leaseAgeInMonths <= 24 ? months : months.slice(-24)
 
-    // Fetch rent history for these months
-    let rentHistory: { [month: string]: number } = {}
-    let rentDetails: { [month: string]: { rent: number; charges: number } } = {}
     try {
       const startMonth = last24Months[0]
       const endMonth = last24Months[last24Months.length - 1]
-      const response = await fetch(
-        `/api/leases/${leaseData.id}/rent-history?startMonth=${startMonth}&endMonth=${endMonth}`
-      )
-      if (response.ok) {
-        const history = await response.json()
-        rentHistory = history.reduce((acc: any, item: any) => {
-          acc[item.month] = item.totalAmount
-          return acc
-        }, {})
-        rentDetails = history.reduce((acc: any, item: any) => {
-          acc[item.month] = {
-            rent: item.rentAmount,
-            charges: item.chargesAmount
-          }
-          return acc
-        }, {})
 
-        // Find the most recent rent amounts (from the last month in history)
-        if (history.length > 0) {
-          const mostRecent = history[history.length - 1]
+      // Use the centralized monthly payment history API
+      const response = await fetch(
+        `/api/leases/${leaseData.id}/monthly-payment-history?startMonth=${startMonth}&endMonth=${endMonth}`
+      )
+
+      if (response.ok) {
+        const monthlyHistory = await response.json()
+
+        // Update current rent amounts from most recent month
+        if (monthlyHistory.length > 0) {
+          const mostRecent = monthlyHistory[monthlyHistory.length - 1]
           setCurrentRentAmount(mostRecent.rentAmount)
           setCurrentChargesAmount(mostRecent.chargesAmount)
         } else {
           setCurrentRentAmount(leaseData.rentAmount)
           setCurrentChargesAmount(leaseData.chargesAmount)
         }
+
+        // Reverse to show newest first
+        setMonthlyRows(monthlyHistory.reverse())
+      } else {
+        console.error('Failed to fetch monthly payment history')
+        setCurrentRentAmount(leaseData.rentAmount)
+        setCurrentChargesAmount(leaseData.chargesAmount)
       }
     } catch (error) {
-      console.error('Error fetching rent history:', error)
-      // Fallback to fixed rent if API fails
-      const fallbackRent = leaseData.rentAmount + leaseData.chargesAmount
-      last24Months.forEach((month) => {
-        rentHistory[month] = fallbackRent
-        rentDetails[month] = {
-          rent: leaseData.rentAmount,
-          charges: leaseData.chargesAmount
-        }
-      })
+      console.error('Error fetching monthly payment history:', error)
       setCurrentRentAmount(leaseData.rentAmount)
       setCurrentChargesAmount(leaseData.chargesAmount)
     }
-
-    // Group payments by month
-    const paymentsByMonth = new Map<string, Payment[]>()
-    leaseData.payments.forEach((payment) => {
-      const month = payment.paymentDate.substring(0, 7)
-      if (!paymentsByMonth.has(month)) {
-        paymentsByMonth.set(month, [])
-      }
-      paymentsByMonth.get(month)!.push(payment)
-    })
-
-    // Group charges by month
-    const chargesByMonth = new Map<string, Charge[]>()
-    if (leaseData.charges && leaseData.charges.length > 0) {
-      leaseData.charges.forEach((charge) => {
-        const month = charge.chargeDate.substring(0, 7)
-        if (!chargesByMonth.has(month)) {
-          chargesByMonth.set(month, [])
-        }
-        chargesByMonth.get(month)!.push(charge)
-      })
-    }
-
-    // Calculate running balance
-    let runningBalance = 0
-    const rows: MonthlyRow[] = []
-
-    last24Months.forEach((month) => {
-      const monthPayments = paymentsByMonth.get(month) || []
-      const monthCharges = chargesByMonth.get(month) || []
-      const totalPaid = monthPayments.reduce((sum, p) => sum + p.amount, 0)
-      const totalCharges = monthCharges.reduce((sum, c) => sum + c.amount, 0)
-
-      // Get rent for this specific month (may vary due to rent revisions)
-      const monthlyRent =
-        rentHistory[month] || leaseData.rentAmount + leaseData.chargesAmount
-
-      const balanceBefore = runningBalance
-      // Payments increase balance (positive), rent and charges decrease it (negative)
-      // Balance = what tenant has paid - what they owe
-      // Positive balance = overpayment, negative = debt
-      runningBalance = runningBalance + totalPaid - monthlyRent - totalCharges
-      const balanceAfter = runningBalance
-
-      // Normalize near-zero balances to avoid floating point artifacts (e.g. +1.1e-16 treated as overpayment)
-      const TOLERANCE = 0.01
-      const normalizedBalanceAfter =
-        Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter
-
-      // Determine receipt type
-      let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid'
-
-      // Si aucun paiement ce mois
-      if (totalPaid === 0) {
-        // Si le locataire avait un crédit avant (balanceBefore > 0), il utilise son crédit
-        if (balanceBefore > 0) {
-          // Vérifier si le crédit couvre tout le loyer
-          if (normalizedBalanceAfter >= 0) {
-            receiptType = 'full' // Le crédit a couvert tout le loyer
-          } else {
-            receiptType = 'partial' // Le crédit n'a pas couvert tout le loyer
-          }
-        } else {
-          // Pas de crédit et pas de paiement = loyer impayé
-          receiptType = 'unpaid'
-        }
-      } else if (normalizedBalanceAfter > 0) {
-        // Si le solde après est positif (au-delà de la tolérance), c'est un trop-perçu
-        receiptType = 'overpayment'
-      } else if (normalizedBalanceAfter === 0) {
-        // Si le solde est nul (dans la tolérance), c'est une quittance complète
-        receiptType = 'full'
-      } else {
-        // Sinon c'est un paiement partiel
-        receiptType = 'partial'
-      }
-
-      const [year, monthNum] = month.split('-')
-      const monthDate = new Date(parseInt(year), parseInt(monthNum) - 1)
-      const monthLabel = monthDate.toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long'
-      })
-
-      rows.push({
-        month,
-        monthLabel,
-        monthlyRent,
-        payments: monthPayments.sort(
-          (a, b) =>
-            new Date(b.paymentDate).getTime() -
-            new Date(a.paymentDate).getTime()
-        ),
-        charges: monthCharges.sort(
-          (a, b) =>
-            new Date(b.chargeDate).getTime() - new Date(a.chargeDate).getTime()
-        ),
-        totalPaid,
-        totalCharges,
-        balanceBefore,
-        balanceAfter: normalizedBalanceAfter,
-        receiptType
-      })
-    })
-
-    // Reverse to show newest first
-    setMonthlyRows(rows.reverse())
   }
 
   const handleEditPayment = (payment: Payment) => {
@@ -1024,8 +906,8 @@ ${lease.property.postalCode} ${lease.property.city}
 DÉTAILS DU LOYER
 
 Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
-  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
+  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
 
 Montant payé :                     0,00 €
 
@@ -1064,8 +946,8 @@ ${lease.property.postalCode} ${lease.property.city}
 DÉTAILS DU LOYER
 
 Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
-  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
+  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
 
 Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
 
@@ -1127,8 +1009,8 @@ ${lease.property.postalCode} ${lease.property.city}
 DÉTAILS DU LOYER
 
 Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
-  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
+  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
 
 Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
 Reste à payer :                    ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
@@ -1189,8 +1071,8 @@ ${lease.property.postalCode} ${lease.property.city}
 DÉTAILS DU LOYER
 
 Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${lease.rentAmount.toFixed(2)} €
-  • Charges :                      ${lease.chargesAmount.toFixed(2)} €
+  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
+  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
 
 Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
 Excédent (trop-perçu) :            +${monthRow.balanceAfter.toFixed(2)} €

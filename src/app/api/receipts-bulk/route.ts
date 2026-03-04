@@ -6,8 +6,8 @@ import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/Pris
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
-import { GetApplicableRentForDate } from '@/use-cases/GetApplicableRentForDate';
-import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
+import { PrismaLeaseRentOverrideRepository } from '@/features/rent-override/infrastructure/PrismaLeaseRentOverrideRepository';
+import { CalculateMonthlyPaymentHistory } from '@/features/lease-payment-history/application/CalculateMonthlyPaymentHistory';
 import JSZip from 'jszip';
 
 export async function GET(request: NextRequest) {
@@ -47,12 +47,13 @@ export async function GET(request: NextRequest) {
     const leaseRepo = new PrismaLeaseRepository(prisma);
     const paymentRepo = new PrismaPaymentRepository(prisma);
     const chargeRepo = new PrismaChargeRepository(prisma);
-    const getApplicableRent = new GetApplicableRentForDate(rentRevisionRepo, leaseRepo);
-    const calculateBalance = new CalculateLeaseBalance(
-      rentRevisionRepo,
+    const rentOverrideRepo = new PrismaLeaseRentOverrideRepository(prisma);
+    const calculateMonthlyHistory = new CalculateMonthlyPaymentHistory(
       leaseRepo,
       paymentRepo,
-      chargeRepo
+      chargeRepo,
+      rentRevisionRepo,
+      rentOverrideRepo
     );
 
     // Fetch all active leases for the user
@@ -93,97 +94,68 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Filter out leases with no payments and no balance (nothing to generate)
-    const leasesToProcess = [];
-    for (const lease of leases) {
-      const balances = await calculateBalance.execute(lease.id, endDate);
-
-      // Only include leases that have payments OR a non-zero balance
-      if (lease.payments.length > 0 || balances.balance !== 0) {
-        leasesToProcess.push({
-          lease,
-          balances,
-        });
-      }
-    }
-
-    if (leasesToProcess.length === 0) {
-      return NextResponse.json(
-        { error: 'No receipts to generate for this month' },
-        { status: 404 }
-      );
-    }
+    // Target month for PDF generation
+    const targetMonth = `${year}-${String(monthNum).padStart(2, '0')}`;
 
     // Create ZIP file
     const zip = new JSZip();
     const pdfGenerator = new PdfReceiptGenerator();
 
-    // Generate PDFs for each lease
-    for (const { lease, balances } of leasesToProcess) {
-      // Get applicable rent for the month
-      const applicableRent = await getApplicableRent.execute(
+    // Generate PDFs for each lease using the centralized monthly payment history
+    for (const lease of leases) {
+      // Get monthly payment data for this lease and month
+      const monthlyHistory = await calculateMonthlyHistory.execute(
         lease.id,
-        endDate
+        targetMonth,
+        targetMonth
       );
-      const totalRent = applicableRent.rentAmount + applicableRent.chargesAmount;
 
-      // Calculate payment information for this month
-      let paymentAmount = 0;
+      if (monthlyHistory.length === 0) {
+        continue; // Skip leases with no data
+      }
+
+      const monthData = monthlyHistory[0];
+
+      // Skip unpaid notices as per user's request (only quittances, trop-perçu, reçu partiel)
+      if (monthData.receiptType === 'unpaid') {
+        continue;
+      }
+
+      // Skip months with no payments and zero balance (nothing to generate)
+      if (monthData.totalPaid === 0 && monthData.balanceAfter === 0) {
+        continue;
+      }
+
+      // Determine payment information
       let paymentDate = endDate;
       let paymentNotes: string | undefined;
       let paymentId = '';
 
-      if (lease.payments.length > 0) {
+      if (monthData.payments.length > 0) {
         // Use the last payment of the month
-        const lastPayment = lease.payments[lease.payments.length - 1];
-        paymentAmount = lease.payments.reduce((sum, p) => sum + p.amount, 0);
+        const lastPayment = monthData.payments[monthData.payments.length - 1];
         paymentDate = new Date(lastPayment.paymentDate);
         paymentNotes = lastPayment.notes || undefined;
         paymentId = lastPayment.id;
       } else {
-        paymentId = `unpaid-${lease.id}-${year}-${month}`;
-      }
-
-      // Calculate balance before this month's payments
-      // In CalculateLeaseBalance: balance = totalPaid - totalExpected
-      // So: balance > 0 means overpaid, balance < 0 means underpaid
-      const balanceBefore = balances.balance - paymentAmount;
-      const balanceAfter = balances.balance;
-
-      // Normalize near-zero balances to avoid floating point artifacts (e.g. -1.1e-16 treated as negative)
-      const TOLERANCE = 0.01;
-      const normalizedBalanceAfter = Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter;
-
-      // Determine receipt type
-      let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
-      if (paymentAmount === 0) {
-        // No payment this month
-        receiptType = 'unpaid';
-      } else if (normalizedBalanceAfter > 0) {
-        // Overpaid (balance is positive beyond tolerance)
-        receiptType = 'overpayment';
-      } else if (normalizedBalanceAfter === 0) {
-        // Balance is exactly zero (within tolerance) — full receipt
-        receiptType = 'full';
-      } else {
-        // Still underpaid after payment
-        receiptType = 'partial';
-      }
-
-      // Skip unpaid notices as per user's request (only quittances, trop-perçu, reçu partiel)
-      if (receiptType === 'unpaid') {
-        continue;
+        // No direct payment but may have used credit
+        paymentId = `credit-${lease.id}-${year}-${monthNum}`;
       }
 
       // Generate receipt number
       const receiptNumber = `REC-${paymentId.slice(0, 8).toUpperCase()}`;
 
-      // Prepare receipt data
+      // Calculate period label (e.g., "Janvier 2026")
+      const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+      const periodLabel = `${monthNames[monthNum - 1]} ${yearNum}`;
+
+      // Prepare receipt data using centralized monthly data
       const receiptData = {
         receiptNumber,
         issueDate: new Date(),
         paymentDate,
-        receiptType,
+        period: periodLabel,
+        receiptType: monthData.receiptType,
         landlord: {
           name: lease.property.landlord.name,
           type: lease.property.landlord.type as 'NATURAL_PERSON' | 'LEGAL_ENTITY',
@@ -206,17 +178,17 @@ export async function GET(request: NextRequest) {
           postalCode: lease.property.postalCode,
         },
         lease: {
-          rentAmount: applicableRent.rentAmount,
-          chargesAmount: applicableRent.chargesAmount,
+          rentAmount: monthData.rentAmount,
+          chargesAmount: monthData.chargesAmount,
           paymentDueDay: lease.paymentDueDay,
         },
         payment: {
-          amount: paymentAmount,
+          amount: monthData.totalPaid,
           notes: paymentNotes,
         },
         balance: {
-          before: balanceBefore,
-          after: balanceAfter,
+          before: monthData.balanceBefore,
+          after: monthData.balanceAfter,
         },
       };
 
@@ -225,7 +197,7 @@ export async function GET(request: NextRequest) {
 
       // Generate filename: AAAA_MM_<type>_<tenant_lastname>.pdf
       let filenamePart = '';
-      switch (receiptType) {
+      switch (monthData.receiptType) {
         case 'full':
           filenamePart = 'quittance';
           break;
