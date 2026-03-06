@@ -31,6 +31,36 @@ export class CalculateMonthlyPaymentHistory {
     private rentOverrideRepository: ILeaseRentOverrideRepository
   ) {}
 
+  /**
+   * Execute for a single month, calculating from lease start to get correct running balance
+   * This ensures balanceBefore reflects all previous months
+   */
+  async executeForSingleMonth(
+    leaseId: string,
+    targetMonth: string
+  ): Promise<MonthlyPaymentData> {
+    // Get lease to determine start date
+    const lease = await this.leaseRepository.findById(leaseId);
+    if (!lease) {
+      throw new Error('Lease not found');
+    }
+
+    // Calculate from lease start date to target month
+    const leaseStartDate = new Date(lease.startDate);
+    const startMonth = `${leaseStartDate.getFullYear()}-${String(leaseStartDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // Execute for the full range
+    const monthlyHistory = await this.execute(leaseId, startMonth, targetMonth);
+
+    // Return the last month (target month)
+    const targetData = monthlyHistory.find(m => m.month === targetMonth);
+    if (!targetData) {
+      throw new Error(`No data found for month ${targetMonth}`);
+    }
+
+    return targetData;
+  }
+
   async execute(
     leaseId: string,
     startMonth: string,
@@ -153,7 +183,7 @@ export class CalculateMonthlyPaymentHistory {
           id: p.id,
           amount: p.amount.getValue(),
           paymentDate: p.paymentDate.toISOString(),
-          notes: p.notes,
+          notes: p.notes || null,
           createdAt: p.createdAt.toISOString()
         })).sort((a, b) =>
           new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
@@ -162,7 +192,7 @@ export class CalculateMonthlyPaymentHistory {
           id: c.id,
           amount: c.amount.getValue(),
           chargeDate: c.chargeDate.toISOString(),
-          description: c.description,
+          description: c.description || null,
           createdAt: c.createdAt.toISOString()
         })).sort((a, b) =>
           new Date(b.chargeDate).getTime() - new Date(a.chargeDate).getTime()

@@ -10,9 +10,13 @@ import { CalculateMonthlyPaymentHistory } from '@/features/lease-payment-history
 import { GenerateReceiptContent } from '@/features/receipt/application/GenerateReceiptContent';
 import { ConvertReceiptToPdf } from '@/features/receipt/application/ConvertReceiptToPdf';
 
+/**
+ * GET /api/leases/[leaseId]/receipts-pdf?month=YYYY-MM
+ * Generate PDF receipt for a specific lease and month
+ */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ paymentId: string }> }
+  { params }: { params: Promise<{ leaseId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -21,36 +25,47 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const monthParam = searchParams.get('month'); // YYYY-MM format from frontend
-    const { paymentId } = await params;
+    const month = searchParams.get('month'); // YYYY-MM format (REQUIRED)
+    const { leaseId } = await params;
 
-    // Fetch the payment with all related data
-    const payment = await prisma.payment.findUnique({
-      where: { id: paymentId },
+    if (!month) {
+      return NextResponse.json(
+        { error: 'Month parameter is required (format: YYYY-MM)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate month format
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return NextResponse.json(
+        { error: 'Invalid month format. Expected: YYYY-MM' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch lease with all related data
+    const lease = await prisma.lease.findUnique({
+      where: { id: leaseId },
       include: {
-        lease: {
+        tenants: {
           include: {
-            tenants: {
-              include: {
-                tenant: true,
-              },
-            },
-            property: {
-              include: {
-                landlord: true,
-              },
-            },
+            tenant: true,
+          },
+        },
+        property: {
+          include: {
+            landlord: true,
           },
         },
       },
     });
 
-    if (!payment) {
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+    if (!lease) {
+      return NextResponse.json({ error: 'Lease not found' }, { status: 404 });
     }
 
-    // Verify the user has access to this payment (through landlord)
-    if (payment.lease.property.landlord.userId !== session.userId) {
+    // Verify the user has access to this lease (through landlord)
+    if (lease.property.landlord.userId !== session.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -61,11 +76,9 @@ export async function GET(
     const chargeRepo = new PrismaChargeRepository(prisma);
     const rentOverrideRepo = new PrismaLeaseRentOverrideRepository(prisma);
 
-    // Determine target month from query param or payment date
-    const paymentDate = new Date(payment.paymentDate);
-    const targetMonth = monthParam || `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
-
     // Get monthly payment data using centralized calculation
+    // IMPORTANT: Use executeForSingleMonth to calculate from lease start
+    // This ensures balanceBefore includes all previous months' balances
     const calculateMonthlyHistory = new CalculateMonthlyPaymentHistory(
       leaseRepo,
       paymentRepo,
@@ -74,39 +87,29 @@ export async function GET(
       rentOverrideRepo
     );
 
-    const monthlyHistory = await calculateMonthlyHistory.execute(
-      payment.leaseId,
-      targetMonth,
-      targetMonth
+    const monthData = await calculateMonthlyHistory.executeForSingleMonth(
+      leaseId,
+      month
     );
-
-    if (monthlyHistory.length === 0) {
-      return NextResponse.json(
-        { error: 'No payment data found for this month' },
-        { status: 404 }
-      );
-    }
-
-    const monthData = monthlyHistory[0];
 
     // Generate structured receipt content using the SAME use case as TXT
     const contentGenerator = new GenerateReceiptContent();
     const structuredContent = contentGenerator.execute(monthData, {
-      tenants: payment.lease.tenants.map(lt => ({
+      tenants: lease.tenants.map(lt => ({
         firstName: lt.tenant.firstName,
         lastName: lt.tenant.lastName,
         email: lt.tenant.email,
         phone: lt.tenant.phone,
       })),
       property: {
-        name: payment.lease.property.name,
-        address: payment.lease.property.address,
-        postalCode: payment.lease.property.postalCode,
-        city: payment.lease.property.city,
+        name: lease.property.name,
+        address: lease.property.address,
+        postalCode: lease.property.postalCode,
+        city: lease.property.city,
         landlord: {
-          type: payment.lease.property.landlord.type,
-          name: payment.lease.property.landlord.name,
-          managerName: payment.lease.property.landlord.managerName,
+          type: lease.property.landlord.type,
+          name: lease.property.landlord.name,
+          managerName: lease.property.landlord.managerName,
         },
       },
     });
@@ -116,7 +119,7 @@ export async function GET(
     const pdfBuffer = pdfConverter.execute(structuredContent);
 
     // Generate filename
-    const [year, month] = targetMonth.split('-');
+    const [year, monthNumber] = month.split('-');
     let filenamePart = '';
     switch (structuredContent.receiptType) {
       case 'full':
@@ -133,7 +136,7 @@ export async function GET(
         break;
     }
 
-    const firstTenant = payment.lease.tenants[0]?.tenant;
+    const firstTenant = lease.tenants[0]?.tenant;
     let tenantName = 'LOCATAIRE';
 
     if (firstTenant) {
@@ -151,7 +154,7 @@ export async function GET(
       .replace(/_+/g, '_')
       .toUpperCase();
 
-    const filename = `${year}_${month}_${filenamePart}_${sanitizedTenantName}.pdf`;
+    const filename = `${year}_${monthNumber}_${filenamePart}_${sanitizedTenantName}.pdf`;
 
     // Return PDF file
     return new NextResponse(Buffer.from(pdfBuffer), {

@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
           amount: monthData.totalPaid,
           notes: paymentNotes,
         },
+        payments: monthData.payments,
         balance: {
           before: monthData.balanceBefore,
           after: monthData.balanceAfter,

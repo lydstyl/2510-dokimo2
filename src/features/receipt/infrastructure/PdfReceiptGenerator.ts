@@ -37,6 +37,12 @@ export interface ReceiptData {
     amount: number;
     notes?: string;
   };
+  payments?: Array<{
+    id: string;
+    amount: number;
+    paymentDate: string;
+    notes: string | null;
+  }>;
   balance: {
     before: number;
     after: number;
@@ -88,16 +94,8 @@ export class PdfReceiptGenerator {
     yPosition = this.addLeaseSection(pdf, data.lease, yPosition);
     yPosition += 5;
 
-    // Payment details
-    yPosition = this.addPaymentSection(pdf, data.payment, yPosition);
-    yPosition += 5;
-
-    // Balance information
-    yPosition = this.addBalanceSection(pdf, data.balance, yPosition);
-    yPosition += 5;
-
-    // Status message
-    yPosition = this.addStatusSection(pdf, data.receiptType, data.balance.after, yPosition);
+    // Payment and balance details (TXT format)
+    yPosition = this.addPaymentAndBalanceSection(pdf, data, yPosition);
     yPosition += 10;
 
     // Footer
@@ -362,97 +360,101 @@ export class PdfReceiptGenerator {
     return y;
   }
 
-  private addPaymentSection(
+  private addPaymentAndBalanceSection(
     pdf: jsPDF,
-    payment: ReceiptData['payment'],
+    data: ReceiptData,
     y: number
   ): number {
     y = this.addSectionHeader(pdf, 'DÉTAILS DU PAIEMENT', y);
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text(`Montant payé : ${this.formatCurrency(payment.amount)}`, this.MARGIN_LEFT, y);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    y += this.LINE_HEIGHT + 2;
+    // Montant payé ce mois
+    pdf.text(
+      `Montant payé ce mois :             ${this.formatCurrency(data.payment.amount)}`,
+      this.MARGIN_LEFT,
+      y
+    );
+    y += this.LINE_HEIGHT;
 
-    if (payment.notes) {
-      pdf.text(`Notes : ${payment.notes}`, this.MARGIN_LEFT, y);
+    // For partial payments, show remaining amount
+    if (data.receiptType === 'partial') {
+      pdf.text(
+        `Reste à payer :                    ${this.formatCurrency(Math.abs(data.balance.after))}`,
+        this.MARGIN_LEFT,
+        y
+      );
+      y += this.LINE_HEIGHT;
+    }
+
+    // For overpayments, show excess amount
+    if (data.receiptType === 'overpayment') {
+      pdf.text(
+        `Excédent (trop-perçu) :            +${this.formatCurrency(data.balance.after)}`,
+        this.MARGIN_LEFT,
+        y
+      );
+      y += this.LINE_HEIGHT;
+    }
+
+    y += 2; // Small spacing
+
+    // Soldes
+    const beforeSign = data.balance.before < 0 ? '-' : '+';
+    const afterSign = data.balance.after < 0 ? '-' : '+';
+
+    pdf.text(
+      `Solde avant ce mois :              ${beforeSign}${this.formatCurrency(Math.abs(data.balance.before))}`,
+      this.MARGIN_LEFT,
+      y
+    );
+    y += this.LINE_HEIGHT;
+
+    pdf.text(
+      `Solde après ce mois :              ${afterSign}${this.formatCurrency(Math.abs(data.balance.after))}`,
+      this.MARGIN_LEFT,
+      y
+    );
+    y += this.LINE_HEIGHT + 3;
+
+    // List of payments (if available)
+    if (data.payments && data.payments.length > 0) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PAIEMENTS REÇUS :', this.MARGIN_LEFT, y);
+      pdf.setFont('helvetica', 'normal');
+      y += this.LINE_HEIGHT;
+
+      data.payments.forEach(payment => {
+        const paymentDate = new Date(payment.paymentDate);
+        const formattedDate = paymentDate.toLocaleDateString('fr-FR');
+        const paymentText = `  • ${formattedDate} : ${this.formatCurrency(payment.amount)}${payment.notes ? ' (' + payment.notes + ')' : ''}`;
+
+        pdf.text(paymentText, this.MARGIN_LEFT, y);
+        y += this.LINE_HEIGHT;
+      });
+    } else if (data.payment.amount === 0 && data.balance.before > 0) {
+      // Credit was used
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('UTILISATION DU CRÉDIT :', this.MARGIN_LEFT, y);
+      pdf.setFont('helvetica', 'normal');
+      y += this.LINE_HEIGHT;
+
+      pdf.text(
+        `Le loyer de ce mois a été intégralement réglé par imputation`,
+        this.MARGIN_LEFT,
+        y
+      );
+      y += this.LINE_HEIGHT;
+
+      pdf.text(
+        `sur le crédit existant de ${this.formatCurrency(data.balance.before)}.`,
+        this.MARGIN_LEFT,
+        y
+      );
       y += this.LINE_HEIGHT;
     }
 
     return y;
   }
 
-  private addBalanceSection(
-    pdf: jsPDF,
-    balance: ReceiptData['balance'],
-    y: number
-  ): number {
-    y = this.addSectionHeader(pdf, 'SOLDE DU COMPTE', y);
-
-    const beforeSign = balance.before < 0 ? '-' : '+';
-    const afterSign = balance.after < 0 ? '-' : '+';
-
-    pdf.text(
-      `Solde avant paiement : ${beforeSign}${this.formatCurrency(Math.abs(balance.before))}`,
-      this.MARGIN_LEFT,
-      y
-    );
-    y += this.LINE_HEIGHT;
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(
-      `Solde après paiement : ${afterSign}${this.formatCurrency(Math.abs(balance.after))}`,
-      this.MARGIN_LEFT,
-      y
-    );
-    pdf.setFont('helvetica', 'normal');
-    y += this.LINE_HEIGHT;
-
-    return y;
-  }
-
-  private addStatusSection(
-    pdf: jsPDF,
-    receiptType: string,
-    balanceAfter: number,
-    y: number
-  ): number {
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-
-    let statusText = '';
-    let statusDetail = '';
-
-    switch (receiptType) {
-      case 'full':
-        statusText = 'STATUT : LOYER PAYÉ INTÉGRALEMENT';
-        statusDetail = 'Le locataire est à jour dans ses paiements.';
-        break;
-      case 'partial':
-        statusText = 'STATUT : PAIEMENT PARTIEL';
-        statusDetail = `Solde restant dû : ${this.formatCurrency(Math.abs(balanceAfter))}`;
-        break;
-      case 'overpayment':
-        statusText = 'STATUT : TROP-PERÇU';
-        statusDetail = `Crédit disponible : ${this.formatCurrency(balanceAfter)}`;
-        break;
-      case 'unpaid':
-        statusText = 'STATUT : LOYER IMPAYÉ';
-        statusDetail = `Montant dû : ${this.formatCurrency(Math.abs(balanceAfter))}`;
-        break;
-    }
-
-    pdf.text(statusText, this.MARGIN_LEFT, y);
-    y += this.LINE_HEIGHT;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.text(statusDetail, this.MARGIN_LEFT, y);
-
-    return y + this.LINE_HEIGHT;
-  }
 
   private addFooter(pdf: jsPDF, issueDate: Date, y: number): number {
     // Add separator line

@@ -5,6 +5,9 @@ import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { PhoneNumber } from '@/domain/value-objects/PhoneNumber'
 import { NoteEditor } from '@/components/NoteEditor'
+import { GenerateReceiptContent } from '@/features/receipt/application/GenerateReceiptContent'
+import { ConvertReceiptToTxt } from '@/features/receipt/application/ConvertReceiptToTxt'
+import { MonthlyPaymentData } from '@/features/lease-payment-history/domain/MonthlyPaymentData'
 
 interface Tenant {
   id: string
@@ -701,18 +704,10 @@ Document généré automatiquement par le système de gestion locative.
     const monthRow = monthlyRows.find((r) => r.month === month)
     if (!monthRow) return
 
-    // Get the first payment of the month (or use month info if no payment)
-    const paymentId =
-      monthRow.payments.length > 0 ? monthRow.payments[0].id : null
-
-    if (!paymentId) {
-      alert('Aucun paiement trouvé pour générer un reçu PDF')
-      return
-    }
-
     try {
+      // Use new API route based on leaseId and month (no paymentId needed)
       const response = await fetch(
-        `/api/receipts-pdf/${paymentId}?type=${receiptType}`
+        `/api/leases/${lease.id}/receipts-pdf?month=${month}`
       )
       if (!response.ok) {
         throw new Error('Erreur lors de la génération du PDF')
@@ -834,274 +829,43 @@ Document généré automatiquement par le système de gestion locative.
     const monthRow = monthlyRows.find((r) => r.month === month)
     if (!monthRow) return
 
-    const currentDate = new Date().toLocaleDateString('fr-FR')
-    let content = ''
-    let filename = ''
-
-    // Get landlord name based on type (manager name for legal entities)
-    const getLandlordName = () => {
-      if (
-        lease.property.landlord.type === 'LEGAL_ENTITY' &&
-        lease.property.landlord.managerName
-      ) {
-        return lease.property.landlord.managerName
-      }
-      return lease.property.landlord.name
-    }
-    const landlordName = getLandlordName()
-
-    // Format all tenants for display
-    const formatTenants = () => {
-      if (!lease.tenants || lease.tenants.length === 0) {
-        return 'Aucun locataire'
-      }
-      return lease.tenants
-        .map((t, index) => {
-          const label =
-            lease.tenants.length > 1 ? `LOCATAIRE ${index + 1}` : 'LOCATAIRE'
-          return `${label}
-${t.firstName} ${PhoneNumber.formatLastName(t.lastName)}
-${t.email || 'Email non renseigné'}
-${PhoneNumber.format(t.phone) || 'Téléphone non renseigné'}`
-        })
-        .join('\n\n')
+    // Convert monthRow to MonthlyPaymentData format
+    const monthData: MonthlyPaymentData = {
+      month: monthRow.month,
+      monthLabel: monthRow.monthLabel,
+      rentAmount: monthRow.rentAmount,
+      chargesAmount: monthRow.chargesAmount,
+      monthlyRent: monthRow.monthlyRent,
+      payments: monthRow.payments,
+      charges: monthRow.charges,
+      totalPaid: monthRow.totalPaid,
+      totalCharges: monthRow.totalCharges,
+      balanceBefore: monthRow.balanceBefore,
+      balanceAfter: monthRow.balanceAfter,
+      receiptType: monthRow.receiptType as 'full' | 'partial' | 'overpayment' | 'unpaid',
     }
 
-    // Format tenant names for signature text (e.g., "Jean Dupont et Marie Martin")
-    const formatTenantNames = () => {
-      if (!lease.tenants || lease.tenants.length === 0) {
-        return 'le(s) locataire(s)'
-      }
-      if (lease.tenants.length === 1) {
-        return `${lease.tenants[0].firstName} ${PhoneNumber.formatLastName(lease.tenants[0].lastName)}`
-      }
-      const names = lease.tenants.map(
-        (t) => `${t.firstName} ${PhoneNumber.formatLastName(t.lastName)}`
-      )
-      const lastTenant = names.pop()
-      return `${names.join(', ')} et ${lastTenant}`
-    }
+    // Generate structured content using centralized use case
+    const generator = new GenerateReceiptContent()
+    const structuredContent = generator.execute(monthData, {
+      tenants: lease.tenants,
+      property: {
+        name: lease.property.name,
+        address: lease.property.address,
+        postalCode: lease.property.postalCode,
+        city: lease.property.city,
+        landlord: {
+          type: lease.property.landlord.type,
+          name: lease.property.landlord.name,
+          managerName: lease.property.landlord.managerName,
+        },
+      },
+    })
 
-    // Generate content based on receipt type
-    if (receiptType === 'unpaid') {
-      // AVIS DE LOYER IMPAYÉ
-      content = `═══════════════════════════════════════════════════════
-              AVIS DE LOYER IMPAYÉ
-═══════════════════════════════════════════════════════
-
-Période : ${monthRow.monthLabel}
-Généré le : ${currentDate}
-
-─────────────────────────────────────────────────────
-
-${formatTenants()}
-
-BIEN LOUÉ
-${lease.property.name}
-${lease.property.address}
-${lease.property.postalCode} ${lease.property.city}
-
-─────────────────────────────────────────────────────
-
-DÉTAILS DU LOYER
-
-Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
-  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
-
-Montant payé :                     0,00 €
-
-Solde antérieur (avant ce mois) :  ${monthRow.balanceBefore.toFixed(2)} €
-Solde dû après ce mois :           ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
-
-─────────────────────────────────────────────────────
-
-Ce document atteste que le loyer du mois de ${monthRow.monthLabel}
-n'a pas été réglé à la date d'édition de cet avis.
-
-═══════════════════════════════════════════════════════`
-      filename = `avis-impaye-${month}.txt`
-    } else if (receiptType === 'full') {
-      // QUITTANCE DE LOYER
-      const creditUsed = monthRow.totalPaid === 0 && monthRow.balanceBefore > 0
-
-      content = `═══════════════════════════════════════════════════════
-              QUITTANCE DE LOYER
-═══════════════════════════════════════════════════════
-
-Période : ${monthRow.monthLabel}
-Généré le : ${currentDate}
-
-─────────────────────────────────────────────────────
-
-${formatTenants()}
-
-BIEN LOUÉ
-${lease.property.name}
-${lease.property.address}
-${lease.property.postalCode} ${lease.property.city}
-
-─────────────────────────────────────────────────────
-
-DÉTAILS DU LOYER
-
-Loyer mensuel :                    ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
-  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
-
-Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
-
-Solde avant ce mois :              ${monthRow.balanceBefore.toFixed(2)} €
-Solde après ce mois :              ${monthRow.balanceAfter.toFixed(2)} €
-
-${
-  creditUsed
-    ? `UTILISATION DU CRÉDIT :
-Le loyer de ce mois a été intégralement réglé par imputation
-sur le crédit existant de ${monthRow.balanceBefore.toFixed(2)} €.
-`
-    : `PAIEMENTS REÇUS :
-${monthRow.payments
-  .map(
-    (p) =>
-      `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
-  )
-  .join('\n')}
-`
-}
-─────────────────────────────────────────────────────
-
-Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
-ci-dessus, ${
-        creditUsed
-          ? `atteste que le loyer pour la période du ${monthRow.monthLabel}\na été intégralement réglé par utilisation du crédit existant.`
-          : `reconnais avoir reçu de ${formatTenantNames()} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\ndu loyer et des charges pour la période du ${monthRow.monthLabel}.`
-      }
-
-Cette quittance annule tous les reçus qui auraient pu
-être donnés précédemment en cas d'acomptes versés sur
-la période en question.
-
-═══════════════════════════════════════════════════════`
-      filename = `quittance-loyer-${month}.txt`
-    } else if (receiptType === 'partial') {
-      // REÇU PARTIEL
-      const creditUsed = monthRow.totalPaid === 0 && monthRow.balanceBefore > 0
-
-      content = `═══════════════════════════════════════════════════════
-              REÇU DE PAIEMENT PARTIEL
-═══════════════════════════════════════════════════════
-
-Période : ${monthRow.monthLabel}
-Généré le : ${currentDate}
-
-─────────────────────────────────────────────────────
-
-${formatTenants()}
-
-BIEN LOUÉ
-${lease.property.name}
-${lease.property.address}
-${lease.property.postalCode} ${lease.property.city}
-
-─────────────────────────────────────────────────────
-
-DÉTAILS DU LOYER
-
-Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
-  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
-
-Montant payé ce mois :             ${monthRow.totalPaid.toFixed(2)} €
-Reste à payer :                    ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
-
-Solde avant ce mois :              ${monthRow.balanceBefore.toFixed(2)} €
-Solde après ce mois :              ${monthRow.balanceAfter.toFixed(2)} €
-
-${
-  creditUsed
-    ? `UTILISATION DU CRÉDIT :
-Le crédit existant de ${monthRow.balanceBefore.toFixed(2)} € a été utilisé
-pour régler partiellement le loyer de ce mois.
-`
-    : `PAIEMENTS REÇUS :
-${monthRow.payments
-  .map(
-    (p) =>
-      `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
-  )
-  .join('\n')}
-`
-}
-─────────────────────────────────────────────────────
-
-Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
-ci-dessus, ${
-        creditUsed
-          ? `atteste qu'un crédit de ${monthRow.balanceBefore.toFixed(2)} € a été imputé\nsur le loyer pour la période du ${monthRow.monthLabel}.`
-          : `reconnais avoir reçu de ${formatTenantNames()} la somme de ${monthRow.totalPaid.toFixed(2)} € au titre\nd'un paiement partiel pour la période du ${monthRow.monthLabel}.`
-      }
-
-ATTENTION : Ce document ne constitue pas une quittance
-de loyer. Le solde restant dû de ${Math.abs(monthRow.balanceAfter).toFixed(2)} €
-devra être réglé.
-
-═══════════════════════════════════════════════════════`
-      filename = `recu-partiel-${month}.txt`
-    } else if (receiptType === 'overpayment') {
-      // REÇU DE TROP-PERÇU
-      content = `═══════════════════════════════════════════════════════
-              REÇU DE PAIEMENT - TROP-PERÇU
-═══════════════════════════════════════════════════════
-
-Période : ${monthRow.monthLabel}
-Généré le : ${currentDate}
-
-─────────────────────────────────────────────────────
-
-${formatTenants()}
-
-BIEN LOUÉ
-${lease.property.name}
-${lease.property.address}
-${lease.property.postalCode} ${lease.property.city}
-
-─────────────────────────────────────────────────────
-
-DÉTAILS DU LOYER
-
-Loyer mensuel dû :                 ${monthRow.monthlyRent.toFixed(2)} €
-  • Loyer :                        ${monthRow.rentAmount.toFixed(2)} €
-  • Charges :                      ${monthRow.chargesAmount.toFixed(2)} €
-
-Montant payé :                     ${monthRow.totalPaid.toFixed(2)} €
-Excédent (trop-perçu) :            +${monthRow.balanceAfter.toFixed(2)} €
-
-Solde avant paiement :             ${monthRow.balanceBefore.toFixed(2)} €
-Solde après paiement :             +${monthRow.balanceAfter.toFixed(2)} €
-
-PAIEMENTS REÇUS :
-${monthRow.payments
-  .map(
-    (p) =>
-      `  • ${new Date(p.paymentDate).toLocaleDateString('fr-FR')} : ${p.amount.toFixed(2)} €${p.notes ? ' (' + p.notes + ')' : ''}`
-  )
-  .join('\n')}
-
-─────────────────────────────────────────────────────
-
-Je soussigné(e), ${landlordName}, bailleur du bien immobilier désigné
-ci-dessus, reconnais avoir reçu de ${formatTenantNames()}
-la somme de ${monthRow.totalPaid.toFixed(2)} € pour
-la période du ${monthRow.monthLabel}.
-
-Le montant versé est supérieur au loyer dû, générant
-un crédit de ${monthRow.balanceAfter.toFixed(2)} € qui sera déduit du
-prochain loyer ou remboursé selon accord entre les parties.
-
-═══════════════════════════════════════════════════════`
-      filename = `recu-trop-percu-${month}.txt`
-    }
+    // Convert to TXT format
+    const txtConverter = new ConvertReceiptToTxt()
+    const content = txtConverter.execute(structuredContent)
+    const filename = txtConverter.getFilename(structuredContent, month)
 
     // Download the file
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
