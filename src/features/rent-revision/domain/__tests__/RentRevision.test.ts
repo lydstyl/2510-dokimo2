@@ -3,9 +3,16 @@ import { RentRevision, RentRevisionStatus } from '../RentRevision';
 import { Money } from '@/domain/value-objects/Money';
 
 describe('RentRevision', () => {
+  // Helper to get a future date (30 days from now)
+  const getFutureDate = (daysFromNow = 30) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    return date;
+  };
+
   describe('create', () => {
     it('should create a valid rent revision', () => {
-      const effectiveDate = new Date('2026-03-01');
+      const effectiveDate = getFutureDate(30);
       const rentAmount = Money.create(850);
       const chargesAmount = Money.create(70);
 
@@ -50,7 +57,8 @@ describe('RentRevision', () => {
     });
 
     it('should allow past effectiveDate when allowPastDate option is true', () => {
-      const pastDate = new Date('2025-09-01');
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 30); // 30 days ago
 
       const revision = RentRevision.create({
         id: 'revision-1',
@@ -76,7 +84,7 @@ describe('RentRevision', () => {
         RentRevision.create({
           id: 'revision-1',
           leaseId: '',
-          effectiveDate: new Date('2026-03-01'),
+          effectiveDate: getFutureDate(30),
           rentAmount: Money.create(850),
           chargesAmount: Money.create(70),
           status: RentRevisionStatus.EN_PREPARATION,
@@ -92,7 +100,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.EN_PREPARATION,
@@ -110,7 +118,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.EN_PREPARATION,
@@ -125,7 +133,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.COURRIER_AR_ENVOYE,
@@ -142,7 +150,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.COURRIER_AR_ENVOYE,
@@ -157,7 +165,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.EN_PREPARATION,
@@ -230,7 +238,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.EN_PREPARATION,
@@ -250,7 +258,7 @@ describe('RentRevision', () => {
       const revision = RentRevision.create({
         id: 'revision-1',
         leaseId: 'lease-1',
-        effectiveDate: new Date('2026-03-01'),
+        effectiveDate: getFutureDate(30),
         rentAmount: Money.create(850),
         chargesAmount: Money.create(70),
         status: RentRevisionStatus.EN_PREPARATION,
@@ -287,7 +295,7 @@ describe('RentRevision', () => {
     });
 
     it('should reconstitute a revision with a future effective date', () => {
-      const futureDate = new Date('2026-06-01');
+      const futureDate = getFutureDate(90); // 90 days from now
 
       const revision = RentRevision.reconstitute({
         id: 'revision-1',
@@ -309,7 +317,7 @@ describe('RentRevision', () => {
         RentRevision.reconstitute({
           id: 'revision-1',
           leaseId: '',
-          effectiveDate: new Date('2025-01-01'),
+          effectiveDate: getFutureDate(60),
           rentAmount: Money.create(850),
           chargesAmount: Money.create(70),
           status: RentRevisionStatus.COURRIER_AR_ENVOYE,

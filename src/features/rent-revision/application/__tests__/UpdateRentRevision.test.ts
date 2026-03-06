@@ -9,12 +9,19 @@ describe('UpdateRentRevision', () => {
   let useCase: UpdateRentRevision;
   let existingRevision: RentRevision;
 
+  // Helper to get a future date
+  const getFutureDate = (daysFromNow = 30) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    return date;
+  };
+
   beforeEach(() => {
     // Create an existing revision
     existingRevision = RentRevision.create({
       id: 'revision-1',
       leaseId: 'lease-1',
-      effectiveDate: new Date('2026-03-01'),
+      effectiveDate: getFutureDate(30),
       rentAmount: Money.create(800),
       chargesAmount: Money.create(60),
       reason: 'IRL_REVISION',
@@ -64,7 +71,7 @@ describe('UpdateRentRevision', () => {
   });
 
   it('should update effective date to a future date', async () => {
-    const newDate = new Date('2026-04-01');
+    const newDate = getFutureDate(60); // 60 days from now
     const result = await useCase.execute({
       id: 'revision-1',
       effectiveDate: newDate,
@@ -74,7 +81,8 @@ describe('UpdateRentRevision', () => {
   });
 
   it('should allow updating effective date to a past date (retroactive modification)', async () => {
-    const pastDate = new Date('2025-09-01');
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 30); // 30 days ago
     const result = await useCase.execute({
       id: 'revision-1',
       effectiveDate: pastDate,
@@ -94,7 +102,7 @@ describe('UpdateRentRevision', () => {
   });
 
   it('should update multiple fields at once', async () => {
-    const newDate = new Date('2026-05-01');
+    const newDate = getFutureDate(90); // 90 days from now
     const result = await useCase.execute({
       id: 'revision-1',
       effectiveDate: newDate,

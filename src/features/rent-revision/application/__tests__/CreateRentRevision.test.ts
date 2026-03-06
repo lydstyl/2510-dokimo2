@@ -7,6 +7,13 @@ describe('CreateRentRevision', () => {
   let mockRepository: IRentRevisionRepository;
   let useCase: CreateRentRevision;
 
+  // Helper to get a future date
+  const getFutureDate = (daysFromNow = 30) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    return date;
+  };
+
   beforeEach(() => {
     mockRepository = {
       findById: vi.fn(),
@@ -24,7 +31,7 @@ describe('CreateRentRevision', () => {
   it('should create a rent revision successfully', async () => {
     const dto: CreateRentRevisionDto = {
       leaseId: 'lease-1',
-      effectiveDate: new Date('2026-03-01'),
+      effectiveDate: getFutureDate(30),
       rentAmount: 850,
       chargesAmount: 70,
       reason: 'IRL_REVISION',
@@ -44,7 +51,7 @@ describe('CreateRentRevision', () => {
   it('should throw error if lease ID is empty', async () => {
     const dto: CreateRentRevisionDto = {
       leaseId: '',
-      effectiveDate: new Date('2026-03-01'),
+      effectiveDate: getFutureDate(30),
       rentAmount: 850,
       chargesAmount: 70,
     };
@@ -67,7 +74,8 @@ describe('CreateRentRevision', () => {
   });
 
   it('should allow past effective date when allowPastDate is true', async () => {
-    const pastDate = new Date('2025-09-01');
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 30); // 30 days ago
 
     const dto: CreateRentRevisionDto = {
       leaseId: 'lease-1',
@@ -94,7 +102,7 @@ describe('CreateRentRevision', () => {
   it('should throw error if rent amount is negative', async () => {
     const dto: CreateRentRevisionDto = {
       leaseId: 'lease-1',
-      effectiveDate: new Date('2026-03-01'),
+      effectiveDate: getFutureDate(30),
       rentAmount: -100,
       chargesAmount: 70,
     };
