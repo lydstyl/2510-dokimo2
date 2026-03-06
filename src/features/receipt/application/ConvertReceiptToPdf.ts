@@ -9,6 +9,7 @@ export class ConvertReceiptToPdf {
   private readonly FONT_SIZE = 10;
   private readonly LINE_HEIGHT = 5;
   private readonly MARGIN_LEFT = 15;
+  private readonly MARGIN_RIGHT = 195; // A4 width (210mm) - 15mm margin
   private readonly PAGE_WIDTH = 210; // A4 width in mm
 
   /**
@@ -44,17 +45,24 @@ export class ConvertReceiptToPdf {
       yPosition += this.LINE_HEIGHT;
     };
 
+    // Helper to draw a horizontal line
+    const addHorizontalLine = () => {
+      doc.setLineWidth(0.3);
+      doc.line(this.MARGIN_LEFT, yPosition - 2, this.MARGIN_RIGHT, yPosition - 2);
+      yPosition += this.LINE_HEIGHT;
+    };
+
     // Header separator
-    addLine('═══════════════════════════════════════════════════════');
+    addHorizontalLine();
     addLine(`              ${content.title}`, true);
-    addLine('═══════════════════════════════════════════════════════');
+    addHorizontalLine();
     addBlankLine();
 
     // Period and date
     addLine(`Période : ${content.period}`);
     addLine(`Généré le : ${content.generatedDate}`);
     addBlankLine();
-    addLine('─────────────────────────────────────────────────────');
+    addHorizontalLine();
     addBlankLine();
 
     // Tenants
@@ -73,7 +81,7 @@ export class ConvertReceiptToPdf {
     addLine(content.property.address);
     addLine(`${content.property.postalCode} ${content.property.city}`);
     addBlankLine();
-    addLine('─────────────────────────────────────────────────────');
+    addHorizontalLine();
     addBlankLine();
 
     // Rent details
@@ -157,7 +165,7 @@ export class ConvertReceiptToPdf {
     }
 
     addBlankLine();
-    addLine('─────────────────────────────────────────────────────');
+    addHorizontalLine();
     addBlankLine();
 
     // Attestation (split into lines for proper wrapping)
@@ -172,7 +180,7 @@ export class ConvertReceiptToPdf {
     }
 
     addBlankLine();
-    addLine('═══════════════════════════════════════════════════════');
+    addHorizontalLine();
 
     // Return as Uint8Array
     return doc.output('arraybuffer') as unknown as Uint8Array;
