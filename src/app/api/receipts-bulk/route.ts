@@ -110,12 +110,6 @@ export async function GET(request: NextRequest) {
         targetMonth
       );
 
-      // Debug log
-      const debugTenantName = lease.tenants[0]?.tenant ? `${lease.tenants[0].tenant.firstName} ${lease.tenants[0].tenant.lastName}` : 'Unknown';
-      console.log(`[BULK ${lease.id}] Tenant: ${debugTenantName}`);
-      console.log(`[BULK ${lease.id}] receiptType from monthData: ${monthData.receiptType}`);
-      console.log(`[BULK ${lease.id}] balanceAfter: ${monthData.balanceAfter}`);
-
       // Skip unpaid notices as per user's request (only quittances, trop-perçu, reçu partiel)
       if (monthData.receiptType === 'unpaid') {
         continue;
