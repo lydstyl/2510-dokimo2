@@ -5,7 +5,8 @@ import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLease
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { PrismaRentRevisionRepository } from '@/infrastructure/repositories/PrismaRentRevisionRepository';
 import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
-import { CalculateLeaseBalance } from '@/use-cases/CalculateLeaseBalance';
+import { PrismaLeaseRentOverrideRepository } from '@/features/rent-override/infrastructure/PrismaLeaseRentOverrideRepository';
+import { CalculateMonthlyPaymentHistory } from '@/features/lease-payment-history/application/CalculateMonthlyPaymentHistory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,60 +45,32 @@ export async function GET(request: NextRequest) {
     const leaseRepository = new PrismaLeaseRepository(prisma);
     const paymentRepository = new PrismaPaymentRepository(prisma);
     const chargeRepository = new PrismaChargeRepository(prisma);
-    const calculateBalance = new CalculateLeaseBalance(
-      rentRevisionRepository,
+    const rentOverrideRepository = new PrismaLeaseRentOverrideRepository(prisma);
+
+    const calculateMonthlyHistory = new CalculateMonthlyPaymentHistory(
       leaseRepository,
       paymentRepository,
-      chargeRepository
+      chargeRepository,
+      rentRevisionRepository,
+      rentOverrideRepository
     );
 
     // Calculate balance for each lease for current month
     const results = [];
 
     for (const lease of activeLeases) {
-      const balance = await calculateBalance.execute(lease.id, now);
-
-      // Only include leases that are not fully paid or overpaid
-      const monthlyRent = lease.rentAmount + lease.chargesAmount;
-      const paymentsThisMonth = lease.payments.filter(p => {
-        const paymentMonth = new Date(p.paymentDate).toISOString().slice(0, 7);
-        return paymentMonth === currentMonth;
-      });
-
-      const totalPaidThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0);
+      // Use CalculateMonthlyPaymentHistory which is the single source of truth
+      // and correctly handles rent revisions, overrides, and charges
+      const monthData = await calculateMonthlyHistory.executeForSingleMonth(
+        lease.id,
+        currentMonth
+      );
 
       // Get the last payment (even if before current month)
       const lastPayment = lease.payments.length > 0 ? lease.payments[0] : null;
 
-      // Calculate balance before this month's payments
-      // In CalculateLeaseBalance: balance = totalPaid - totalExpected
-      // So: balance > 0 means overpaid, balance < 0 means underpaid
-      const balanceBefore = balance.balance - totalPaidThisMonth;
-      const balanceAfter = balance.balance;
-
-      // Normalize near-zero balances to avoid floating point artifacts (e.g. -1.1e-16 displayed as -0.00)
-      const TOLERANCE = 0.01;
-      const normalizedBalanceBefore = Math.abs(balanceBefore) < TOLERANCE ? 0 : balanceBefore;
-      const normalizedBalanceAfter = Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter;
-
-      // Determine receipt type
-      let receiptType: 'unpaid' | 'partial' | 'full' | 'overpayment';
-      if (totalPaidThisMonth === 0) {
-        // No payment this month
-        receiptType = 'unpaid';
-      } else if (normalizedBalanceAfter > 0) {
-        // Overpaid (balance is positive beyond tolerance)
-        receiptType = 'overpayment';
-      } else if (normalizedBalanceAfter === 0) {
-        // Balance is exactly zero (within tolerance) — full receipt
-        receiptType = 'full';
-      } else {
-        // Still underpaid after payment
-        receiptType = 'partial';
-      }
-
       // Only include if tenant has an outstanding balance (exclude fully-paid)
-      if (normalizedBalanceAfter !== 0) {
+      if (monthData.balanceAfter !== 0) {
         results.push({
           leaseId: lease.id,
           property: {
@@ -110,16 +83,16 @@ export async function GET(request: NextRequest) {
             lastName: lease.tenants[0].tenant.lastName,
           },
           month: currentMonth,
-          rentDue: monthlyRent,
-          amountPaid: totalPaidThisMonth,
-          balanceBefore: normalizedBalanceBefore,
-          balanceAfter: normalizedBalanceAfter,
-          receiptType,
-          payments: paymentsThisMonth.map(p => ({
+          rentDue: monthData.monthlyRent,
+          amountPaid: monthData.totalPaid,
+          balanceBefore: monthData.balanceBefore,
+          balanceAfter: monthData.balanceAfter,
+          receiptType: monthData.receiptType,
+          payments: monthData.payments.map(p => ({
             id: p.id,
             amount: p.amount,
             paymentDate: p.paymentDate,
-            notes: p.notes,
+            notes: p.notes || null,
           })),
           lastPayment: lastPayment ? {
             amount: lastPayment.amount,
