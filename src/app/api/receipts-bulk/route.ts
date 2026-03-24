@@ -104,17 +104,17 @@ export async function GET(request: NextRequest) {
     // Generate PDFs for each lease using the centralized monthly payment history
     for (const lease of leases) {
       // Get monthly payment data for this lease and month
-      const monthlyHistory = await calculateMonthlyHistory.execute(
+      // Use executeForSingleMonth which calculates from lease start (includes all previous months' balance)
+      const monthData = await calculateMonthlyHistory.executeForSingleMonth(
         lease.id,
-        targetMonth,
         targetMonth
       );
 
-      if (monthlyHistory.length === 0) {
-        continue; // Skip leases with no data
-      }
-
-      const monthData = monthlyHistory[0];
+      // Debug log
+      const debugTenantName = lease.tenants[0]?.tenant ? `${lease.tenants[0].tenant.firstName} ${lease.tenants[0].tenant.lastName}` : 'Unknown';
+      console.log(`[BULK ${lease.id}] Tenant: ${debugTenantName}`);
+      console.log(`[BULK ${lease.id}] receiptType from monthData: ${monthData.receiptType}`);
+      console.log(`[BULK ${lease.id}] balanceAfter: ${monthData.balanceAfter}`);
 
       // Skip unpaid notices as per user's request (only quittances, trop-perçu, reçu partiel)
       if (monthData.receiptType === 'unpaid') {

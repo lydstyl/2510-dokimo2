@@ -136,14 +136,23 @@ export class CalculateMonthlyPaymentHistory {
       // Balance calculation: positive = overpayment, negative = debt
       // Balance = what tenant has paid - what they owe
       runningBalance = runningBalance + totalPaid - monthRentData.totalAmount - totalCharges;
-      let balanceAfter = runningBalance;
 
       // Normalize near-zero balances to avoid floating point artifacts
       const TOLERANCE = 0.01;
-      balanceAfter = Math.abs(balanceAfter) < TOLERANCE ? 0 : balanceAfter;
+      runningBalance = Math.abs(runningBalance) < TOLERANCE ? 0 : runningBalance;
+      const balanceAfter = runningBalance;
 
       // Determine receipt type
       let receiptType: 'full' | 'partial' | 'overpayment' | 'unpaid';
+
+      // Debug logging for month 2026-03
+      if (month === '2026-03') {
+        console.log(`[DEBUG ${leaseId}] Month: ${month}`);
+        console.log(`[DEBUG ${leaseId}] totalPaid: ${totalPaid}`);
+        console.log(`[DEBUG ${leaseId}] balanceBefore: ${balanceBefore}`);
+        console.log(`[DEBUG ${leaseId}] balanceAfter: ${balanceAfter}`);
+        console.log(`[DEBUG ${leaseId}] monthlyRent: ${monthRentData.totalAmount}`);
+      }
 
       if (totalPaid === 0) {
         // No payment this month
@@ -163,6 +172,11 @@ export class CalculateMonthlyPaymentHistory {
         receiptType = 'full'; // Balance is zero (within tolerance)
       } else {
         receiptType = 'partial'; // Still owes money
+      }
+
+      // Debug logging for receipt type
+      if (month === '2026-03') {
+        console.log(`[DEBUG ${leaseId}] receiptType: ${receiptType}`);
       }
 
       // Generate month label (e.g., "Janvier 2026")
