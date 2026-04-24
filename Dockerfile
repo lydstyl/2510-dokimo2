@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ─── Base: Node + outils de compilation pour les modules natifs ─────────────
-FROM node:22-slim AS base
+FROM node:24-slim AS base
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
@@ -31,7 +31,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate && npm run build
 
 # ─── Production ─────────────────────────────────────────────────────────────
-FROM node:22-slim AS production
+FROM node:24-slim AS production
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
