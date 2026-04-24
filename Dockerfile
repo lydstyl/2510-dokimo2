@@ -19,6 +19,7 @@ RUN npm ci --omit=dev
 FROM base AS development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV DATABASE_URL=file:/tmp/build-placeholder.db
 RUN npx prisma generate
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]
@@ -28,6 +29,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL=file:/tmp/build-placeholder.db
 RUN npx prisma generate && npm run build
 
 # ─── Production ─────────────────────────────────────────────────────────────
