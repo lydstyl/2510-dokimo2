@@ -4,16 +4,16 @@ A Next.js application for managing rental properties, leases, and payments with 
 
 ## Tech Stack
 
-- **Next.js 15** (App Router) with TypeScript
-- **Prisma ORM** with SQLite (PostgreSQL ready)
+- **Next.js 16** (App Router, Turbopack) with TypeScript 6
+- **Prisma 7** ORM with SQLite (driver adapter: better-sqlite3)
 - **Vitest** for testing
-- **TailwindCSS** for styling
+- **TailwindCSS 4** for styling
 - **next-intl** for French UI
 - **Jose** for JWT authentication
 
 ## Architecture
 
-Clean Architecture with strict layer separation. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+Clean Architecture with strict layer separation. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed documentation.
 
 **For Claude Code**: See [CLAUDE.md](CLAUDE.md) for development guidelines, conventions, and common pitfalls.
 
@@ -29,70 +29,98 @@ Clean Architecture with strict layer separation. See [ARCHITECTURE.md](ARCHITECT
 5. **CSV Export**: Export payment history
 6. **Payment Status**: Check if tenants are up-to-date or late with rent
 
-## Quick Start
+---
 
-### Prerequisites
-- Node.js 18+
+## Lancer avec Docker (recommandé)
+
+La façon la plus simple de démarrer, sans installer Node.js localement.
+
+### Prérequis
+- [Docker Engine](https://docs.docker.com/engine/install/ubuntu/) ≥ 24
+
+```bash
+cp .env.example .env
+# Éditer .env avec vos valeurs
+```
+
+### Développement (hot reload)
+
+```bash
+docker compose --profile dev up
+# → http://localhost:3000
+```
+
+### Production
+
+```bash
+docker compose --profile prod up -d --build
+# → http://localhost:3000
+```
+
+### Arrêter
+
+```bash
+docker compose --profile dev down
+# ou
+docker compose --profile prod down
+```
+
+> Voir [docs/DOCKER.md](docs/DOCKER.md) pour le guide complet (installation Docker, gestion des volumes, résolution de problèmes).
+
+---
+
+## Lancer en local (sans Docker)
+
+### Prérequis
+- Node.js 24+
 - npm
 
 ### Installation
 
 ```bash
-# 1. Install dependencies
+# 1. Installer les dépendances
 npm install
 
-# 2. Set up environment
+# 2. Configurer l'environnement
 cp .env.example .env
-# Edit .env with your credentials
+# Éditer .env avec vos identifiants
 
-# 3. Set up database
+# 3. Initialiser la base de données
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
 
-# 4. Start development server
+# 4. Lancer le serveur de développement
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and login with your `.env` credentials.
+Ouvrir [http://localhost:3000](http://localhost:3000) et se connecter avec les identifiants du `.env`.
 
-## Development
-
-### Common Commands
+### Commandes courantes
 
 ```bash
-npm run dev              # Start dev server
-npm run build            # Build for production
-npm test                 # Run tests
-npm run prisma:studio    # Open database GUI
+npm run dev              # Serveur de développement
+npm run build            # Build de production
+npm start                # Lancer le build de production
+npm test                 # Lancer les tests
+npm run prisma:studio    # Interface graphique de la base de données
 ```
 
-See [SETUP.md](SETUP.md) for detailed development instructions.
-
-### Testing
-
-Tests focus on domain and use-case layers (TDD approach):
+### Tests
 
 ```bash
-npm test                 # Run all tests
-npm test -- --watch      # Watch mode
-npm run test:ui          # UI mode
+npm test                 # Tous les tests
+npm test -- --watch      # Mode watch
+npm run test:ui          # Mode UI
 ```
 
-## Project Documentation
+---
 
-- **[README.md](README.md)** - This file (project overview, quick start)
-- **[CLAUDE.md](CLAUDE.md)** - Development guidelines for Claude Code
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture documentation
-- **[SETUP.md](SETUP.md)** - Complete setup and troubleshooting guide
+## Documentation
 
-## Roadmap
-
-- [ ] Rent revision based on IRL (French rent index)
-- [ ] Email notifications for rent due dates
-- [ ] PDF generation for documents
-- [ ] Multi-user support with roles
-- [ ] Dashboard analytics
+- [docs/DOCKER.md](docs/DOCKER.md) — Utilisation avec Docker
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Architecture Clean Architecture
+- [CLAUDE.md](CLAUDE.md) — Guide de développement pour Claude Code
 
 ## License
 
