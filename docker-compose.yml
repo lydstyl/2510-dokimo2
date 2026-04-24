@@ -1,0 +1,37 @@
+services:
+  # ─── Développement (hot reload) ─────────────────────────────────────────────
+  dev:
+    profiles: [dev]
+    build:
+      context: .
+      target: development
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+      - ./messages:/app/messages
+      - ./public:/app/public
+      - ./prisma:/app/prisma
+      - ./prisma.config.ts:/app/prisma.config.ts
+      - ./next.config.ts:/app/next.config.ts
+      - next-dev-cache:/app/.next
+    ports:
+      - "3000:3000"
+
+  # ─── Production ──────────────────────────────────────────────────────────────
+  prod:
+    profiles: [prod]
+    build:
+      context: .
+      target: production
+    env_file: .env
+    environment:
+      DATABASE_URL: file:/app/data/production.db
+    volumes:
+      - db-prod:/app/data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  db-prod:
+  next-dev-cache:
