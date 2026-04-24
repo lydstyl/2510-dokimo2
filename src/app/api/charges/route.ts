@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/infrastructure/auth/session';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/infrastructure/database/prisma';
 import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
 import { AddCharge } from '@/use-cases/AddCharge';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   const session = await getSession();

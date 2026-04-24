@@ -6,7 +6,8 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
+import { prisma as prismaClient } from '@/infrastructure/database/prisma';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';
 import { PrismaPaymentRepository } from '@/infrastructure/repositories/PrismaPaymentRepository';
 import { PrismaChargeRepository } from '@/infrastructure/repositories/PrismaChargeRepository';
@@ -30,7 +31,7 @@ describe('Receipt Consistency Integration Test', () => {
   let lease: any;
 
   beforeAll(async () => {
-    prisma = new PrismaClient();
+    prisma = prismaClient;
 
     // Initialize repositories
     leaseRepo = new PrismaLeaseRepository(prisma);

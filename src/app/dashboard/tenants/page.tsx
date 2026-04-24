@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/infrastructure/auth/session';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/infrastructure/database/prisma';
 import { getTranslations } from 'next-intl/server';
 import { TenantsClient } from './TenantsClient';
-
-const prisma = new PrismaClient();
 
 export default async function TenantsPage() {
   const session = await getSession();

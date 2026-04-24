@@ -1,7 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/infrastructure/database/prisma';
 
 export interface Credentials {
   email: string;

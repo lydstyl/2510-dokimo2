@@ -45,4 +45,5 @@ next-env.d.ts
 
 prisma/dev\ copy.db
 dev.db.backup.*
+/dev.db
 public/uploads/*
