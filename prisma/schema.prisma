@@ -20,6 +20,18 @@ model User {
   landlords  Landlord[]
 }
 
+// API key for MCP server authentication
+model ApiKey {
+  id        String    @id @default(cuid())
+  name      String
+  key       String    @unique
+  prefix    String
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([key])
+}
+
 // Landlord can be a natural person or legal entity (SCI)
 model Landlord {
   id             String     @id @default(cuid())

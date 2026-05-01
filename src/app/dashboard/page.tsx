@@ -159,6 +159,7 @@ export default async function DashboardPage() {
           <DashboardCard title="Publications" description="Annonces de mise en location" href="/dashboard/listings" />
           <DashboardCard title="Immeubles" description="Gérer les immeubles et les charges" href="/dashboard/buildings" />
           <DashboardCard title="Templates" description="Templates d'états des lieux" href="/dashboard/inventory-templates" />
+          <DashboardCard title={t('cards.settings.title')} description={t('cards.settings.description')} href="/dashboard/settings" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

@@ -57,7 +57,34 @@
       "prorata": {
         "title": "Calcul Prorata",
         "description": "Calculer le prorata temporis pour les entrées et sorties"
+      },
+      "settings": {
+        "title": "Paramètres",
+        "description": "Clés API et configuration"
       }
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "apiKeys": {
+      "sectionTitle": "Clés API MCP",
+      "description": "Gérez les clés d'accès pour les agents IA au serveur MCP.",
+      "mcpUrl": "URL du serveur MCP",
+      "noKeys": "Aucune clé API active.",
+      "generate": "Générer une clé",
+      "revoke": "Révoquer",
+      "confirmRevoke": "Révoquer cette clé ? Elle cessera de fonctionner immédiatement.",
+      "nameLabel": "Nom de la clé",
+      "namePlaceholder": "ex : Claude Desktop",
+      "createdAt": "Créée le",
+      "newKeyWarning": "Copiez cette clé maintenant — elle ne sera plus affichée.",
+      "copyKey": "Copier",
+      "copied": "Copié !",
+      "cancel": "Annuler",
+      "confirm": "Confirmer",
+      "keyName": "Nom",
+      "keyPrefix": "Clé (préfixe)",
+      "actions": "Actions"
     }
   },
   "quickRent": {
