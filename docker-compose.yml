@@ -1,37 +1,36 @@
 services:
-  # ─── Développement (hot reload) ─────────────────────────────────────────────
-  dev:
-    profiles: [dev]
-    build:
-      context: .
-      target: development
-    env_file: .env
-    volumes:
-      - ./src:/app/src
-      - ./messages:/app/messages
-      - ./public:/app/public
-      - ./prisma:/app/prisma
-      - ./prisma.config.ts:/app/prisma.config.ts
-      - ./next.config.ts:/app/next.config.ts
-      - next-dev-cache:/app/.next
-    ports:
-      - "3000:3000"
-
-  # ─── Production ──────────────────────────────────────────────────────────────
-  prod:
-    profiles: [prod]
-    build:
-      context: .
-      target: production
-    env_file: .env
-    environment:
-      DATABASE_URL: file:/app/data/production.db
-    volumes:
-      - db-prod:/app/data
-    ports:
-      - "3000:3000"
+  dokimo2:
+    build: .
+    container_name: 2510-dokimo2
     restart: unless-stopped
+    ports:
+      - "3007:3000"
+    volumes:
+      - dokimo2-data:/app/prisma/data
+      - dokimo2-uploads:/app/public/uploads
+    environment:
+      - TZ=Europe/Paris
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/prisma/data/dev.db
+      - AUTH_EMAIL=lydstyl@gmail.com
+      - AUTH_PASSWORD=papass
+      - JWT_SECRET=dokimo2-local-jwt-secret-2026
+      - SECURE_COOKIE=false
+
+  mcp:
+    build: ./mcp-server
+    container_name: 2510-dokimo2-mcp
+    restart: unless-stopped
+    ports:
+      - "3008:3000"
+    volumes:
+      - dokimo2-data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/dev.db
+      - NODE_ENV=production
+    depends_on:
+      - dokimo2
 
 volumes:
-  db-prod:
-  next-dev-cache:
+  dokimo2-data:
+  dokimo2-uploads:
