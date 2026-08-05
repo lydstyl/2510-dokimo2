@@ -7,7 +7,7 @@ export interface UpdateLeaseInput {
   propertyId: string;
   tenantIds: string[];  // Support multiple tenants
   startDate: Date;
-  endDate?: Date;
+  endDate?: Date | null;
   rentAmount: number;
   chargesAmount: number;
   paymentDueDay: number;

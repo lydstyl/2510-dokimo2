@@ -27,6 +27,51 @@ interface Lease {
   }>;
   rentAmount: number;
   chargesAmount: number;
+  irlQuarter?: string;    // "T1", "T2", "T3", "T4" or "1er", "2e", "3e", "4e"
+  startDate: string;      // ISO date
+}
+
+/**
+ * Convert IRL quarter from DB format ("T1", "T2") to display format
+ */
+function formatIrlQuarter(irlQuarter: string): string {
+  const map: Record<string, string> = {
+    'T1': 'premier trimestre',
+    'T2': 'deuxième trimestre',
+    'T3': 'troisième trimestre',
+    'T4': 'quatrième trimestre',
+    '1er': 'premier trimestre',
+    '2e': 'deuxième trimestre',
+    '3e': 'troisième trimestre',
+    '4e': 'quatrième trimestre',
+  };
+  return map[irlQuarter] || irlQuarter;
+}
+
+/**
+ * Compute effective month from lease start date (anniversary + reasonable delay)
+ * Example: startDate 2025-06-01 → "juillet 2026" (anniversary June + 1 month grace)
+ */
+function computeEffectiveMonth(startDate: string): string {
+  const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const start = new Date(startDate);
+  const anniversaryMonth = start.getMonth(); // 0-based
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  // If anniversary already passed this year, target next year
+  // Otherwise target this year's anniversary
+  let targetYear = currentYear;
+  if (anniversaryMonth <= now.getMonth()) {
+    targetYear = currentYear + 1;
+  }
+
+  // Add 1 month grace period after anniversary
+  const effectiveMonth = (anniversaryMonth + 1) % 12;
+  const effectiveYear = anniversaryMonth === 11 ? targetYear + 1 : targetYear;
+
+  return `${months[effectiveMonth]} ${effectiveYear}`;
 }
 
 export default function NewRentRevisionPage() {
@@ -39,6 +84,10 @@ export default function NewRentRevisionPage() {
   const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Current effective rent (accounts for prior revisions/overrides)
+  const [effectiveRentAmount, setEffectiveRentAmount] = useState<number | null>(null);
+  const [effectiveChargesAmount, setEffectiveChargesAmount] = useState<number | null>(null);
 
   // Form fields
   const [letterDate, setLetterDate] = useState(new Date().toISOString().split('T')[0]);
@@ -61,15 +110,50 @@ export default function NewRentRevisionPage() {
       setSelectedLease(lease || null);
       if (lease) {
         setNewChargesAmount(lease.chargesAmount.toString());
+        // Fetch the current effective rent (accounts for prior revisions/overrides)
+        fetchEffectiveRent(lease.id);
+        // Pre-fill IRL quarter from lease
+        if (lease.irlQuarter) {
+          setQuarter(formatIrlQuarter(lease.irlQuarter));
+        }
+        // Pre-fill effective month from lease start date (anniversary + delay)
+        setEffectiveMonth(computeEffectiveMonth(lease.startDate));
       }
     } else {
       setSelectedLease(null);
+      setEffectiveRentAmount(null);
+      setEffectiveChargesAmount(null);
     }
   }, [selectedLeaseId, leases]);
 
+  const fetchEffectiveRent = async (leaseId: string) => {
+    try {
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const response = await fetch(
+        `/api/leases/${leaseId}/rent-history?startMonth=${currentMonth}&endMonth=${currentMonth}`
+      );
+      if (response.ok) {
+        const history = await response.json();
+        if (history.length > 0) {
+          const current = history[0];
+          setEffectiveRentAmount(current.rentAmount);
+          setEffectiveChargesAmount(current.chargesAmount);
+          setNewChargesAmount(current.chargesAmount.toString());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching effective rent:', error);
+    }
+    // Fallback to lease base amounts
+    setEffectiveRentAmount(null);
+    setEffectiveChargesAmount(null);
+  };
+
   useEffect(() => {
     calculateNewRent();
-  }, [oldIndex, newIndex, selectedLease]);
+  }, [oldIndex, newIndex, selectedLease, effectiveRentAmount]);
 
   const fetchLeases = async () => {
     try {
@@ -93,7 +177,8 @@ export default function NewRentRevisionPage() {
 
     const oldIdx = parseFloat(oldIndex);
     const newIdx = parseFloat(newIndex);
-    const currentRent = selectedLease.rentAmount;
+    // Use effective rent (after prior revisions) if available, fall back to lease base rent
+    const currentRent = effectiveRentAmount ?? selectedLease.rentAmount;
 
     if (oldIdx > 0 && newIdx > 0) {
       const newRent = (currentRent * newIdx) / oldIdx;
@@ -192,9 +277,9 @@ export default function NewRentRevisionPage() {
       oldIndex,
       newIndex,
       irlQuarter: quarter,
-      oldRent: selectedLease.rentAmount,
+      oldRent: effectiveRentAmount ?? selectedLease.rentAmount,
       newRent: calculatedRent,
-      oldCharges: selectedLease.chargesAmount,
+      oldCharges: effectiveChargesAmount ?? selectedLease.chargesAmount,
       newCharges: parseFloat(newChargesAmount),
       effectiveMonth,
     };
@@ -256,13 +341,13 @@ export default function NewRentRevisionPage() {
           {selectedLease && (
             <div className="bg-gray-50 p-4 rounded-md">
               <p className="text-sm text-gray-600">
-                <strong>{tCommon('currentRent')} :</strong> {selectedLease.rentAmount.toFixed(2)} €
+                <strong>{tCommon('currentRent')} :</strong> {(effectiveRentAmount ?? selectedLease.rentAmount).toFixed(2)} €
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Charges actuelles :</strong> {selectedLease.chargesAmount.toFixed(2)} €
+                <strong>Charges actuelles :</strong> {(effectiveChargesAmount ?? selectedLease.chargesAmount).toFixed(2)} €
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Total actuel :</strong> {(selectedLease.rentAmount + selectedLease.chargesAmount).toFixed(2)} €
+                <strong>Total actuel :</strong> {((effectiveRentAmount ?? selectedLease.rentAmount) + (effectiveChargesAmount ?? selectedLease.chargesAmount)).toFixed(2)} €
               </p>
             </div>
           )}
@@ -397,7 +482,7 @@ export default function NewRentRevisionPage() {
                   {(
                     calculatedRent +
                     parseFloat(newChargesAmount) -
-                    (selectedLease.rentAmount + selectedLease.chargesAmount)
+                    ((effectiveRentAmount ?? selectedLease.rentAmount) + (effectiveChargesAmount ?? selectedLease.chargesAmount))
                   ).toFixed(2)}{' '}
                   €
                 </p>

@@ -22,6 +22,19 @@ interface LetterData {
 
 export class RentRevisionLetterGenerator {
   /**
+   * Convert DB civility (M., Mme) to formal form for salutations
+   * - "M." → "Monsieur"
+   * - "Mme" → "Madame"
+   * - anything else → as-is (or fallback "Madame, Monsieur")
+   */
+  private static getFormalCivility(civility?: string): string {
+    if (!civility) return 'Madame, Monsieur';
+    if (civility === 'M.') return 'Monsieur';
+    if (civility === 'Mme') return 'Madame';
+    return civility;
+  }
+
+  /**
    * Generate TXT letter content
    */
   static generateTxtLetter(data: LetterData): string {
@@ -55,6 +68,7 @@ export class RentRevisionLetterGenerator {
     const increasePercent = ((increase / oldTotal) * 100).toFixed(2);
 
     const quarterInfo = irlQuarter ? ` du ${irlQuarter}` : '';
+    const formalCivility = RentRevisionLetterGenerator.getFormalCivility(tenantCivility);
 
     return `${landlordName}
 ${landlordAddress}
@@ -69,7 +83,7 @@ Objet : Révision annuelle du loyer
 Lettre recommandée avec accusé de réception
 
 
-${tenantCivility},
+${formalCivility},
 
 Par la présente, je vous informe de la révision annuelle du loyer de votre logement situé au ${propertyAddress}, conformément aux dispositions de l'article 17 d) de la loi n° 89-462 du 6 juillet 1989.
 
@@ -98,7 +112,7 @@ Cette révision prendra effet à compter du ${effectiveMonth}.
 
 Pour toute question concernant cette révision, je reste à votre disposition.
 
-Je vous prie d'agréer, ${tenantCivility}, l'expression de mes salutations distinguées.
+Je vous prie d'agréer, ${formalCivility}, l'expression de mes salutations distinguées.
 
 
 ${landlordName}
@@ -165,6 +179,7 @@ Pour consulter les indices IRL : https://www.google.com/search?q=indice+IRL
     const increasePercent = ((increase / oldTotal) * 100).toFixed(2);
 
     const quarterInfo = irlQuarter ? ` du ${irlQuarter}` : '';
+    const formalCivility = RentRevisionLetterGenerator.getFormalCivility(tenantCivility);
 
     // Create PDF
     const doc = new jsPDF();
@@ -213,7 +228,7 @@ Pour consulter les indices IRL : https://www.google.com/search?q=indice+IRL
     y += 10;
 
     // Opening
-    addText(`${tenantCivility},`, margin, 11);
+    addText(`${formalCivility},`, margin, 11);
     y += 5;
 
     // Main content
@@ -262,7 +277,7 @@ Pour consulter les indices IRL : https://www.google.com/search?q=indice+IRL
     // Closing
     addMultilineText('Pour toute question concernant cette révision, je reste à votre disposition.');
     y += 5;
-    addMultilineText(`Je vous prie d'agréer, ${tenantCivility}, l'expression de mes salutations distinguées.`);
+    addMultilineText(`Je vous prie d'agréer, ${formalCivility}, l'expression de mes salutations distinguées.`);
     y += 15;
 
     addText(landlordName, margin, 11, 'bold');

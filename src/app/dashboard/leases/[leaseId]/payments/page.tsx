@@ -1117,8 +1117,13 @@ Document généré automatiquement par le système de gestion locative.
                       </td>
                       <td className='px-6 py-4 whitespace-nowrap'>
                         <div className='flex items-center gap-2'>
-                          <div className='text-sm text-gray-900'>
-                            €{row.monthlyRent.toFixed(2)}
+                          <div>
+                            <div className='text-sm text-gray-900'>
+                              €{row.monthlyRent.toFixed(2)}
+                            </div>
+                            <div className='text-xs text-gray-500'>
+                              €{row.rentAmount.toFixed(2)} + €{row.chargesAmount.toFixed(2)}
+                            </div>
                           </div>
                           <button
                             onClick={() => handleEditRent(row.month)}

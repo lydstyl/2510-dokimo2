@@ -5,7 +5,7 @@ export interface LeaseProps {
   propertyId: string;
   tenantIds: string[];  // array of tenant IDs (supports multiple tenants)
   startDate: Date;
-  endDate?: Date;
+  endDate?: Date | null;
   rentAmount: Money;
   chargesAmount: Money;
   paymentDueDay: number;
@@ -57,7 +57,7 @@ export class Lease {
     return this.props.startDate;
   }
 
-  get endDate(): Date | undefined {
+  get endDate(): Date | undefined | null {
     return this.props.endDate;
   }
 

@@ -85,7 +85,7 @@ export async function PATCH(
       propertyId,
       tenantIds,
       startDate: new Date(startDate),
-      endDate: endDate ? new Date(endDate) : undefined,
+      endDate: endDate ? new Date(endDate) : null,
       rentAmount: Number(rentAmount),
       chargesAmount: Number(chargesAmount),
       paymentDueDay: Number(paymentDueDay),
