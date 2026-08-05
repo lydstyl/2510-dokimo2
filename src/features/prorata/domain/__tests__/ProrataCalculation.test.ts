@@ -18,7 +18,7 @@ describe('ProrataCalculation', () => {
         calculationType: 'MOVE_IN',
       })
 
-      expect(prorata.monthlyRent.amount).toBe(1000)
+      expect(prorata.monthlyRent.getAmount()).toBe(1000)
       expect(prorata.daysOccupied).toBe(daysOccupied)
       expect(prorata.daysInMonth).toBe(daysInMonth)
       expect(prorata.calculationType).toBe('MOVE_IN')
@@ -38,7 +38,7 @@ describe('ProrataCalculation', () => {
         calculationType: 'MOVE_OUT',
       })
 
-      expect(prorata.monthlyRent.amount).toBe(1500)
+      expect(prorata.monthlyRent.getAmount()).toBe(1500)
       expect(prorata.daysOccupied).toBe(daysOccupied)
       expect(prorata.calculationType).toBe('MOVE_OUT')
     })
@@ -85,7 +85,7 @@ describe('ProrataCalculation', () => {
 
       const prorataAmount = prorata.calculateProrataAmount()
       // 17 days (15th to 31st inclusive) / 31 days * 1000 = 548.39
-      expect(prorataAmount.amount).toBeCloseTo(548.39, 2)
+      expect(prorataAmount.getAmount()).toBeCloseTo(548.39, 2)
     })
 
     it('should calculate correct prorata for outgoing tenant', () => {
@@ -100,7 +100,7 @@ describe('ProrataCalculation', () => {
 
       const prorataAmount = prorata.calculateProrataAmount()
       // 10 days / 28 days * 1500 = 535.71
-      expect(prorataAmount.amount).toBeCloseTo(535.71, 2)
+      expect(prorataAmount.getAmount()).toBeCloseTo(535.71, 2)
     })
 
     it('should return full rent for complete month', () => {
@@ -114,7 +114,7 @@ describe('ProrataCalculation', () => {
       })
 
       const prorataAmount = prorata.calculateProrataAmount()
-      expect(prorataAmount.amount).toBe(1200)
+      expect(prorataAmount.getAmount()).toBe(1200)
     })
 
     it('should handle single day occupancy', () => {
@@ -129,7 +129,7 @@ describe('ProrataCalculation', () => {
 
       const prorataAmount = prorata.calculateProrataAmount()
       // 1 day / 31 days * 3100 = 100
-      expect(prorataAmount.amount).toBeCloseTo(100, 2)
+      expect(prorataAmount.getAmount()).toBeCloseTo(100, 2)
     })
   })
 
@@ -177,7 +177,7 @@ describe('ProrataCalculation', () => {
 
       const dailyRate = prorata.getDailyRate()
       // 3100 / 31 = 100
-      expect(dailyRate.amount).toBe(100)
+      expect(dailyRate.getAmount()).toBe(100)
     })
 
     it('should round daily rate to 2 decimals', () => {
@@ -192,7 +192,7 @@ describe('ProrataCalculation', () => {
 
       const dailyRate = prorata.getDailyRate()
       // 1000 / 28 = 35.71...
-      expect(dailyRate.amount).toBeCloseTo(35.71, 2)
+      expect(dailyRate.getAmount()).toBeCloseTo(35.71, 2)
     })
   })
 })

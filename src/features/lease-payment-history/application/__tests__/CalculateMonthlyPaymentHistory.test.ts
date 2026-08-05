@@ -53,11 +53,10 @@ describe('CalculateMonthlyPaymentHistory', () => {
       findByLeaseId: vi.fn(),
       findByLeaseIdOrderedByDate: vi.fn(),
       create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
     };
 
     mockRentOverrideRepo = {
+      findById: vi.fn(),
       findByLeaseIdAndMonth: vi.fn(),
       findAllByLeaseId: vi.fn(),
       create: vi.fn(),
@@ -376,7 +375,6 @@ describe('CalculateMonthlyPaymentHistory', () => {
         effectiveDate: new Date('2026-02-01'),
         reason: 'IRL increase',
         createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       vi.mocked(mockLeaseRepo.findById).mockResolvedValue(lease);
@@ -421,7 +419,6 @@ describe('CalculateMonthlyPaymentHistory', () => {
         effectiveDate: new Date('2026-02-01'),
         reason: 'IRL',
         createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       // Tenant pays same amount in Feb, but rent increased
@@ -475,7 +472,6 @@ describe('CalculateMonthlyPaymentHistory', () => {
         effectiveDate: new Date('2026-01-01'),
         reason: 'IRL',
         createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       // Override for Feb only: set rent to 310 (lower than revision)

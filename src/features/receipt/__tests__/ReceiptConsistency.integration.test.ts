@@ -5,7 +5,7 @@
  * This test uses real lease data: ec344d00-8c3e-4918-b22d-8685b9acc233
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
 import { prisma as prismaClient } from '@/infrastructure/database/prisma';
 import { PrismaLeaseRepository } from '@/infrastructure/repositories/PrismaLeaseRepository';

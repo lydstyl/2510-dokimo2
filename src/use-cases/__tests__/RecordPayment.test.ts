@@ -12,6 +12,7 @@ describe('RecordPayment', () => {
     mockRepository = {
       findById: vi.fn(),
       findByLeaseId: vi.fn(),
+      findByLeaseIdAndPeriod: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
