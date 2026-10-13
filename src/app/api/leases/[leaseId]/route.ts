@@ -46,7 +46,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    return NextResponse.json(lease);
+    // `tenants` keeps exposing the join rows (composite id `<leaseId>_<tenantId>`)
+    // for existing clients. `tenantIds` exposes the ids the PATCH route expects:
+    // sending the composite ids back as tenantIds is what wiped a lease on
+    // 13/10/2026, so give callers an unambiguous source.
+    return NextResponse.json({
+      ...lease,
+      tenantIds: lease.tenants.map((leaseTenant) => leaseTenant.tenantId),
+    });
   } catch (error) {
     console.error('Error fetching lease:', error);
     return NextResponse.json(
@@ -73,6 +80,20 @@ export async function PATCH(
     if (!propertyId || !tenantIds || !Array.isArray(tenantIds) || tenantIds.length === 0 || !startDate || rentAmount === undefined || chargesAmount === undefined || !paymentDueDay) {
       return NextResponse.json(
         { error: 'Missing required fields or invalid tenantIds' },
+        { status: 400 }
+      );
+    }
+
+    // Reject a duplicated tenant up front: the repository would fail on the
+    // unique constraint after having replaced the join rows (rolled back, so no
+    // corruption, but the message would be an opaque Prisma error).
+    const duplicatedTenantIds = tenantIds.filter(
+      (tenantId, index) => tenantIds.indexOf(tenantId) !== index
+    );
+
+    if (duplicatedTenantIds.length > 0) {
+      return NextResponse.json(
+        { error: `Duplicated tenant id: ${[...new Set(duplicatedTenantIds)].join(', ')}` },
         { status: 400 }
       );
     }

@@ -142,4 +142,36 @@ describe('UpdateLease', () => {
     await expect(updateLease.execute(input)).rejects.toThrow('Payment due day must be between 1 and 31');
     expect(mockRepository.update).not.toHaveBeenCalled();
   });
+
+  it('should propagate the repository error and keep no partial state', async () => {
+    const existingLease = Lease.create({
+      id: 'lease-123',
+      propertyId: 'property-1',
+      tenantIds: ['tenant-1'],
+      startDate: new Date('2024-01-01'),
+      rentAmount: Money.create(1000),
+      chargesAmount: Money.create(100),
+      paymentDueDay: 5,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+    });
+
+    const input = {
+      id: 'lease-123',
+      propertyId: 'property-1',
+      tenantIds: ['tenant-1', 'unknown-tenant'],
+      startDate: new Date('2024-01-01'),
+      rentAmount: 1000,
+      chargesAmount: 100,
+      paymentDueDay: 5,
+    };
+
+    vi.mocked(mockRepository.findById).mockResolvedValue(existingLease);
+    vi.mocked(mockRepository.update).mockRejectedValue(new Error('Unknown tenant id: unknown-tenant'));
+
+    await expect(updateLease.execute(input)).rejects.toThrow('Unknown tenant id: unknown-tenant');
+
+    // The rejected update must not be retried nor partially applied.
+    expect(mockRepository.update).toHaveBeenCalledOnce();
+  });
 });
