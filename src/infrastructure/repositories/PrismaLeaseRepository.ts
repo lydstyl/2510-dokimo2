@@ -116,35 +116,56 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   }
 
   async update(lease: Lease): Promise<Lease> {
-    // Delete existing tenant relationships and create new ones
-    await this.prisma.leaseTenant.deleteMany({
-      where: { leaseId: lease.id },
-    });
+    // The tenant relationships are replaced ATOMICALLY: deleting the existing
+    // rows and re-creating them must either both apply or neither.
+    // Regression 13/10/2026: outside of a transaction, a failing re-creation
+    // (unknown tenant id) left the deletion in place, so the lease ended up
+    // with zero tenant and every later read threw
+    // "At least one tenant is required".
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Fail early with an explicit message, BEFORE deleting anything.
+      const existingTenants = await tx.tenant.findMany({
+        where: { id: { in: lease.tenantIds } },
+        select: { id: true },
+      });
+      const existingTenantIds = new Set(existingTenants.map((tenant) => tenant.id));
+      const unknownTenantIds = lease.tenantIds.filter(
+        (tenantId) => !existingTenantIds.has(tenantId)
+      );
 
-    const updated = await this.prisma.lease.update({
-      where: { id: lease.id },
-      data: {
-        startDate: lease.startDate,
-        endDate: lease.endDate,
-        rentAmount: lease.rentAmount.getValue(),
-        chargesAmount: lease.chargesAmount.getValue(),
-        paymentDueDay: lease.paymentDueDay,
-        irlQuarter: lease.irlQuarter,
-        note: lease.note,
-        tenants: {
-          create: lease.tenantIds.map(tenantId => ({
-            id: `${lease.id}_${tenantId}`,
-            tenantId: tenantId,
-          })),
-        },
-      },
-      include: {
-        tenants: {
-          select: {
-            tenantId: true,
+      if (unknownTenantIds.length > 0) {
+        throw new Error(`Unknown tenant id: ${unknownTenantIds.join(', ')}`);
+      }
+
+      await tx.leaseTenant.deleteMany({
+        where: { leaseId: lease.id },
+      });
+
+      return tx.lease.update({
+        where: { id: lease.id },
+        data: {
+          startDate: lease.startDate,
+          endDate: lease.endDate,
+          rentAmount: lease.rentAmount.getValue(),
+          chargesAmount: lease.chargesAmount.getValue(),
+          paymentDueDay: lease.paymentDueDay,
+          irlQuarter: lease.irlQuarter,
+          note: lease.note,
+          tenants: {
+            create: lease.tenantIds.map(tenantId => ({
+              id: `${lease.id}_${tenantId}`,
+              tenantId: tenantId,
+            })),
           },
         },
-      },
+        include: {
+          tenants: {
+            select: {
+              tenantId: true,
+            },
+          },
+        },
+      });
     });
 
     return this.toDomain(updated);
