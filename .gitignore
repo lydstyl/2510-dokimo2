@@ -46,3 +46,7 @@ prisma/dev\ copy.db
 dev.db.backup.*
 /dev.db
 public/uploads/*
+# E2E Playwright (artefacts + secrets locaux)
+e2e/test-results/
+e2e/playwright-report/
+e2e/.auth/
